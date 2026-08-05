@@ -1,0 +1,10 @@
+{
+  "description": "An AI-powered education assistant that helps students find reliable answers on schools, courses, admissions, and academic decisions quickly and easily.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
