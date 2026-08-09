@@ -14,6 +14,51 @@ function genId() {
   return Math.random().toString(36).slice(2)
 }
 
+// Design System Constants (Single Source of Truth)
+const DESIGN_SYSTEM = {
+  colors: {
+    background: '#ffffff',
+    surface: '#fafafa',
+    border: '#e0e0e0',
+    text: '#000000',
+    textSecondary: '#666666',
+    textTertiary: '#999999',
+    primary: '#5b6af0',
+    accent: '#10d9a0',
+    error: '#ff4444',
+  },
+  spacing: {
+    xs: 8,
+    sm: 12,
+    md: 16,
+    lg: 24,
+    xl: 32,
+  },
+  typography: {
+    headingLarge: { fontSize: 20, fontWeight: 700, lineHeight: 1.2 },
+    headingMedium: { fontSize: 18, fontWeight: 600, lineHeight: 1.3 },
+    body: { fontSize: 15, fontWeight: 400, lineHeight: 1.6 },
+    bodySmall: { fontSize: 13, fontWeight: 500, lineHeight: 1.5 },
+    caption: { fontSize: 12, fontWeight: 500, lineHeight: 1.4 },
+    captionSmall: { fontSize: 11, fontWeight: 600, lineHeight: 1.3 },
+  },
+  radius: {
+    sm: 8,
+    md: 12,
+    lg: 16,
+  },
+  shadows: {
+    light: '0 2px 8px rgba(0, 0, 0, 0.06)',
+    medium: '0 4px 16px rgba(0, 0, 0, 0.1)',
+    hover: '0 8px 24px rgba(91, 106, 240, 0.15)',
+  },
+  transitions: {
+    fast: '0.15s',
+    normal: '0.2s',
+    slow: '0.3s',
+  },
+}
+
 export default function ChatInterface({ onBack }: ChatInterfaceProps) {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -64,7 +109,6 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
     setMessages(nextMessages)
     setIsLoading(true)
 
-    // Simulate AI thinking delay
     await new Promise(r => setTimeout(r, 1800 + Math.random() * 1000))
 
     const response = generateAIResponse(text)
@@ -82,7 +126,6 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
     setMessages(finalMessages)
     setIsLoading(false)
 
-    // Create/update conversation
     if (!activeId) {
       const newConvo: Conversation = {
         id: genId(),
@@ -106,8 +149,11 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
 
   return (
     <div style={{
-      display: 'flex', height: '100vh', overflow: 'hidden',
-      background: '#ffffff', fontFamily: 'Outfit, sans-serif',
+      display: 'flex',
+      height: '100vh',
+      overflow: 'hidden',
+      background: DESIGN_SYSTEM.colors.background,
+      fontFamily: 'Outfit, sans-serif',
     }}>
       <style>{`
         @media (max-width: 768px) {
@@ -115,19 +161,17 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
             position: fixed !important;
             top: 0; left: 0; bottom: 0;
             transform: translateX(-100%);
-            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform ${DESIGN_SYSTEM.transitions.normal} cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 50 !important;
           }
           .sidebar.sidebar-open {
             transform: translateX(0);
           }
           .mobile-overlay { display: block !important; }
-          .welcome-grid { grid-template-columns: 1fr !important; }
           .mobile-menu-btn { display: flex !important; }
         }
       `}</style>
 
-      {/* Sidebar */}
       <Sidebar
         conversations={conversations}
         activeId={activeId}
@@ -139,82 +183,130 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
       />
 
       {/* Main chat area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        {/* Chat topbar */}
+        {/* Header (Topbar) - Consistent Visual Hierarchy */}
         <div style={{
-          height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 20px',
-          borderBottom: '1px solid rgba(0,0,0,0.08)',
-          background: '#ffffff', backdropFilter: 'blur(12px)',
-          flexShrink: 0, zIndex: 10,
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: `0 ${DESIGN_SYSTEM.spacing.lg}px`,
+          borderBottom: `1px solid ${DESIGN_SYSTEM.colors.border}`,
+          background: DESIGN_SYSTEM.colors.background,
+          flexShrink: 0,
+          zIndex: 10,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Mobile menu toggle */}
+          {/* Title Section - Clear Information Architecture */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: DESIGN_SYSTEM.spacing.md }}>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="mobile-menu-btn"
               style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: '#666', padding: 4, display: 'none',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: DESIGN_SYSTEM.colors.textSecondary,
+                padding: DESIGN_SYSTEM.spacing.sm,
+                display: 'none',
+                transition: `color ${DESIGN_SYSTEM.transitions.fast}`,
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
                 <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
             </button>
             <div>
               <h1 style={{
-                fontFamily: 'DM Serif Display, Georgia, serif',
-                fontSize: 16, color: '#000', margin: 0, letterSpacing: '-0.01em',
+                ...DESIGN_SYSTEM.typography.headingMedium,
+                color: DESIGN_SYSTEM.colors.text,
+                margin: 0,
+                letterSpacing: '-0.01em',
               }}>
                 {activeConvo?.title || 'New Chat'}
               </h1>
               {hasMessages && (
-                <p style={{ fontSize: 11, color: '#999', margin: 0, marginTop: 1 }}>
-                  {messages.filter(m => m.role === 'user').length} question{messages.filter(m => m.role === 'user').length !== 1 ? 's' : ''} asked
+                <p style={{
+                  ...DESIGN_SYSTEM.typography.captionSmall,
+                  color: DESIGN_SYSTEM.colors.textTertiary,
+                  margin: `${DESIGN_SYSTEM.spacing.xs}px 0 0 0`,
+                }}>
+                  {messages.filter(m => m.role === 'user').length} question{messages.filter(m => m.role === 'user').length !== 1 ? 's' : ''}
                 </p>
               )}
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 8 }}>
+          {/* Action Section - Clear Affordances */}
+          <div style={{ display: 'flex', gap: DESIGN_SYSTEM.spacing.md, alignItems: 'center' }}>
             {hasMessages && (
               <button
                 onClick={startNewChat}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  background: '#f5f5f5', border: '1px solid #ddd',
-                  borderRadius: 7, padding: '6px 12px', cursor: 'pointer',
-                  color: '#666', fontSize: 12, fontFamily: 'Outfit, sans-serif',
-                  transition: 'all 0.15s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: DESIGN_SYSTEM.spacing.sm,
+                  background: DESIGN_SYSTEM.colors.surface,
+                  border: `1px solid ${DESIGN_SYSTEM.colors.border}`,
+                  borderRadius: DESIGN_SYSTEM.radius.md,
+                  padding: `${DESIGN_SYSTEM.spacing.sm}px ${DESIGN_SYSTEM.spacing.md}px`,
+                  cursor: 'pointer',
+                  color: DESIGN_SYSTEM.colors.textSecondary,
+                  ...DESIGN_SYSTEM.typography.caption,
+                  transition: `all ${DESIGN_SYSTEM.transitions.fast}`,
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#efefef'; e.currentTarget.style.borderColor = '#ccc' }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#f5f5f5'; e.currentTarget.style.borderColor = '#ddd' }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = '#f0f0f0'
+                  e.currentTarget.style.borderColor = DESIGN_SYSTEM.colors.primary
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = DESIGN_SYSTEM.colors.surface
+                  e.currentTarget.style.borderColor = DESIGN_SYSTEM.colors.border
+                }}
               >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
                   <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
-                New
+                New Chat
               </button>
             )}
+            {/* Status Indicator - Feedback Principle */}
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: '#f0f9f7', border: '1px solid #d0ebe5',
-              borderRadius: 7, padding: '5px 10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: DESIGN_SYSTEM.spacing.sm,
+              background: `${DESIGN_SYSTEM.colors.accent}15`,
+              border: `1px solid ${DESIGN_SYSTEM.colors.accent}30`,
+              borderRadius: DESIGN_SYSTEM.radius.md,
+              padding: `${DESIGN_SYSTEM.spacing.sm}px ${DESIGN_SYSTEM.spacing.md}px`,
             }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10d9a0', display: 'block', flexShrink: 0 }} />
-              <span style={{ fontSize: 11, color: '#10d9a0', fontWeight: 600 }}>Online</span>
+              <span style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: DESIGN_SYSTEM.colors.accent,
+                display: 'block',
+                flexShrink: 0,
+              }} />
+              <span style={{
+                ...DESIGN_SYSTEM.typography.captionSmall,
+                color: DESIGN_SYSTEM.colors.accent,
+              }}>Online</span>
             </div>
           </div>
         </div>
 
-        {/* Messages area */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', background: '#fafafa' }}>
+        {/* Messages Container - Proper Content Area */}
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: `${DESIGN_SYSTEM.spacing.lg}px ${DESIGN_SYSTEM.spacing.lg}px`,
+          background: DESIGN_SYSTEM.colors.surface,
+        }}>
           {!hasMessages ? (
             <WelcomeScreen onQuestion={sendMessage} />
           ) : (
-            <div style={{ maxWidth: 720, margin: '0 auto' }}>
+            <div style={{ maxWidth: 820, margin: '0 auto' }}>
               {messages.map(msg => (
                 <MessageBubble key={msg.id} message={msg} />
               ))}
@@ -223,12 +315,16 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
           )}
         </div>
 
-        {/* Input */}
-        <div style={{ maxWidth: 760, margin: '0 auto', width: '100%', background: '#ffffff' }}>
-          <MessageInput onSend={sendMessage} disabled={isLoading} />
+        {/* Input Area - Bottom Priority, Persistent */}
+        <div style={{
+          maxWidth: 920,
+          margin: '0 auto',
+          width: '100%',
+          background: DESIGN_SYSTEM.colors.background,
+        }}>
+          <MessageInput onSend={sendMessage} disabled={isLoading} designSystem={DESIGN_SYSTEM} />
         </div>
       </div>
-
     </div>
   )
 }
