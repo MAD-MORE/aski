@@ -3,10 +3,10 @@ import { useState } from 'react'
 interface HeroProps { onStartChat: () => void }
 
 const EXAMPLE_QUESTIONS = [
-  'What are the admission requirements for Computer Science at UJ?',
-  'How do I apply for NSFAS funding this year?',
-  'What is the APS score needed for Medicine at UCT?',
-  'Which universities offer BSc Actuarial Science in South Africa?',
+  'What are the admission requirements for BSc Computer Science at UCC?',
+  'How do I apply for the Students Loan Trust Fund this year?',
+  'What aggregate do I need for BSc Nursing at UCC?',
+  'Which UCC programmes accept a Business elective combination?',
 ]
 
 export default function Hero({ onStartChat }: HeroProps) {
@@ -80,8 +80,8 @@ export default function Hero({ onStartChat }: HeroProps) {
             <p style={{
               fontSize: 17, lineHeight: 1.7, color: '#94a3b8', maxWidth: 440, marginBottom: 40,
             }}>
-              Aski AI is your intelligent education companion — ask anything about schools,
-              courses, admissions, fees, and bursaries. Get clear, reliable answers instantly.
+              Aski AI is your intelligent education companion — ask anything about UCC's
+              programmes, admissions, fees, and scholarships. Get clear, reliable answers instantly.
             </p>
 
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 52 }}>
@@ -123,8 +123,8 @@ export default function Hero({ onStartChat }: HeroProps) {
             {/* Stats row */}
             <div style={{ display: 'flex', gap: 36 }}>
               {[
-                { val: '50k+', label: 'Questions answered' },
-                { val: '200+', label: 'Institutions covered' },
+                { val: '86+', label: 'UCC programmes covered' },
+                { val: '24/7', label: 'Availability' },
                 { val: '98%', label: 'Satisfaction rate' },
               ].map(stat => (
                 <div key={stat.label}>
@@ -192,7 +192,7 @@ export default function Hero({ onStartChat }: HeroProps) {
                     borderRadius: '4px 14px 14px 14px', padding: '12px 14px', maxWidth: 280,
                   }}>
                     <p style={{ fontSize: 13, color: '#c7d2fe', lineHeight: 1.6, margin: 0 }}>
-                      Hello! I'm Aski AI. Ask me anything about schools, admissions, courses, or bursaries. I'm here to help you make the best academic decisions.
+                      Hello! I'm Aski AI. Ask me anything about UCC admissions, programmes, fees, or scholarships. I'm here to help you make the best academic decisions.
                     </p>
                   </div>
                 </div>
@@ -268,7 +268,7 @@ export default function Hero({ onStartChat }: HeroProps) {
               boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
             }}>
               <div style={{ fontSize: 12, color: '#10d9a0', fontWeight: 600 }}>✓ Verified Information</div>
-              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>From 200+ trusted institutions</div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Sourced from UCC's official admissions data</div>
             </div>
           </div>
         </div>

@@ -27,7 +27,7 @@ const FEATURES = [
     description:
       'Navigate complex decisions about schools, faculties, and career paths. Get personalized guidance based on your academic profile, interests, and goals.',
     accent: '#10d9a0',
-    tags: ['School matching', 'APS calculator', 'Career alignment'],
+    tags: ['School matching', 'Aggregate calculator', 'Career alignment'],
   },
   {
     icon: (
@@ -38,7 +38,7 @@ const FEATURES = [
     ),
     title: 'Trusted Information',
     description:
-      'Every answer is grounded in verified data from official university publications, government sources, and NSFAS records. No guesswork — only accurate, current information.',
+      'Every answer is grounded in verified data from official university publications, GTEC and GES sources, and Students Loan Trust Fund records. No guesswork — only accurate, current information.',
     accent: '#a78bfa',
     tags: ['Verified sources', 'Real-time updates', 'Official data'],
   },

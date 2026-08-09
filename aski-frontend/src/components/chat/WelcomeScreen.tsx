@@ -148,9 +148,9 @@ export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
         }}>
           {[
             { label: 'Admissions', color: DESIGN_SYSTEM.colors.primary },
-            { label: 'Bursaries', color: DESIGN_SYSTEM.colors.accent },
+            { label: 'Scholarships', color: DESIGN_SYSTEM.colors.accent },
             { label: 'Courses', color: '#a78bfa' },
-            { label: 'APS Calc', color: '#f59e0b' },
+            { label: 'Aggregate Calc', color: '#f59e0b' },
             { label: 'Rankings', color: DESIGN_SYSTEM.colors.primary },
             { label: 'Careers', color: DESIGN_SYSTEM.colors.accent },
           ].map(pill => (

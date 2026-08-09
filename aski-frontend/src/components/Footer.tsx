@@ -34,7 +34,7 @@ export default function Footer() {
               </span>
             </div>
             <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.7, maxWidth: 220, margin: '0 0 20px' }}>
-              Your intelligent education companion. Helping students navigate schools, courses, and admissions across South Africa.
+              Your intelligent education companion. Helping students navigate schools, courses, and admissions across Ghana.
             </p>
             {/* Social icons */}
             <div style={{ display: 'flex', gap: 10 }}>
@@ -103,7 +103,7 @@ export default function Footer() {
             © 2025 Aski AI. All rights reserved.
           </p>
           <p style={{ fontSize: 12, color: '#334155', margin: 0 }}>
-            Empowering students across South Africa to make informed education decisions.
+            Empowering students across Ghana to make informed education decisions.
           </p>
         </div>
       </div>

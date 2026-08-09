@@ -5,9 +5,9 @@ const STEPS = [
     num: '01',
     title: 'Ask your question',
     description:
-      'Type your question in plain language — no special format needed. Ask about admission requirements, fees, bursaries, course content, or anything else.',
+      'Type your question in plain language — no special format needed. Ask about admission requirements, fees, scholarships, course content, or anything else.',
     color: '#5b6af0',
-    detail: 'Supports English and major South African languages.',
+    detail: 'Supports English, plus Twi and other major Ghanaian languages (coming soon).',
   },
   {
     num: '02',
