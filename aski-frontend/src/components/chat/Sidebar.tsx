@@ -51,8 +51,8 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
         className={mobileOpen ? 'sidebar sidebar-open' : 'sidebar'}
         style={{
           width: 260, flexShrink: 0,
-          background: '#060a14',
-          borderRight: '1px solid rgba(255,255,255,0.06)',
+          background: '#f8f8f8',
+          borderRight: '1px solid #e0e0e0',
           display: 'flex', flexDirection: 'column',
           height: '100vh',
           position: 'relative',
@@ -62,7 +62,7 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
         {/* Top: logo + back */}
         <div style={{
           padding: '16px 16px 12px',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          borderBottom: '1px solid #e0e0e0',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -76,7 +76,7 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
                 <circle cx="8" cy="8" r="1.5" fill="white"/>
               </svg>
             </div>
-            <span style={{ fontFamily: 'DM Serif Display, Georgia, serif', fontSize: 16, color: '#f0f4ff' }}>
+            <span style={{ fontFamily: 'DM Serif Display, Georgia, serif', fontSize: 16, color: '#000' }}>
               Aski <span style={{ color: '#10d9a0' }}>AI</span>
             </span>
           </div>
@@ -84,12 +84,12 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
             onClick={onBack}
             title="Back to home"
             style={{
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
+              background: '#f0f0f0', border: '1px solid #ddd',
               borderRadius: 6, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: '#64748b', transition: 'color 0.15s, border-color 0.15s',
+              cursor: 'pointer', color: '#999', transition: 'color 0.15s, border-color 0.15s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)' }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#666'; e.currentTarget.style.borderColor = '#ccc' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#999'; e.currentTarget.style.borderColor = '#ddd' }}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -124,10 +124,10 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
         <div style={{ padding: '0 12px 8px' }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+            background: '#f0f0f0', border: '1px solid #ddd',
             borderRadius: 7, padding: '7px 10px',
           }}>
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ color: '#475569', flexShrink: 0 }}>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ color: '#999', flexShrink: 0 }}>
               <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.3"/>
               <path d="M9 9l2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
             </svg>
@@ -137,7 +137,7 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
               placeholder="Search conversations..."
               style={{
                 flex: 1, background: 'none', border: 'none', outline: 'none',
-                color: '#94a3b8', fontSize: 12, fontFamily: 'Outfit, sans-serif',
+                color: '#666', fontSize: 12, fontFamily: 'Outfit, sans-serif',
               }}
             />
           </div>
@@ -150,10 +150,10 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
               key={s}
               onClick={() => setSection(s)}
               style={{
-                flex: 1, background: section === s ? 'rgba(91,106,240,0.15)' : 'transparent',
-                border: `1px solid ${section === s ? 'rgba(91,106,240,0.3)' : 'transparent'}`,
+                flex: 1, background: section === s ? '#e3f2fd' : 'transparent',
+                border: `1px solid ${section === s ? '#90caf9' : 'transparent'}`,
                 borderRadius: 6, padding: '5px 8px',
-                color: section === s ? '#818cf8' : '#475569',
+                color: section === s ? '#1976d2' : '#999',
                 fontSize: 11, fontWeight: 600, cursor: 'pointer',
                 fontFamily: 'Outfit, sans-serif', textTransform: 'capitalize',
                 letterSpacing: '0.03em', transition: 'all 0.15s',
@@ -170,7 +170,7 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
             <>
               {pinned.length > 0 && (
                 <>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#334155', padding: '6px 8px 4px', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#999', padding: '6px 8px 4px', textTransform: 'uppercase' }}>
                     Pinned
                   </div>
                   {pinned.map(c => (
@@ -180,7 +180,7 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
               )}
               {recent.length > 0 && (
                 <>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#334155', padding: '10px 8px 4px', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#999', padding: '10px 8px 4px', textTransform: 'uppercase' }}>
                     Recent
                   </div>
                   {recent.map(c => (
@@ -191,7 +191,7 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
             </>
           ) : (
             <>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#334155', padding: '6px 8px 4px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#999', padding: '6px 8px 4px', textTransform: 'uppercase' }}>
                 Saved Answers
               </div>
               {SAVED_ANSWERS.map(s => (
@@ -202,12 +202,12 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
                     padding: '8px 10px', borderRadius: 7, cursor: 'pointer',
                     transition: 'background 0.15s',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#f0f0f0')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <div style={{
                     width: 28, height: 28, borderRadius: 6, flexShrink: 0,
-                    background: 'rgba(16,217,160,0.1)', border: '1px solid rgba(16,217,160,0.2)',
+                    background: '#e8f5e9', border: '1px solid #c8e6c9',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -216,10 +216,10 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
                     </svg>
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 500, color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {s.title}
                     </div>
-                    <div style={{ fontSize: 10, color: '#334155', marginTop: 1 }}>{s.category}</div>
+                    <div style={{ fontSize: 10, color: '#999', marginTop: 1 }}>{s.category}</div>
                   </div>
                 </div>
               ))}
@@ -230,14 +230,14 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
         {/* User profile */}
         <div style={{
           padding: '12px',
-          borderTop: '1px solid rgba(255,255,255,0.05)',
+          borderTop: '1px solid #e0e0e0',
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '8px', borderRadius: 8, cursor: 'pointer',
             transition: 'background 0.15s',
           }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+            onMouseEnter={e => (e.currentTarget.style.background = '#f0f0f0')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           >
             <div style={{
@@ -249,12 +249,12 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
               T
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#c7d2fe', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 Thabo Molefe
               </div>
-              <div style={{ fontSize: 11, color: '#475569' }}>Free plan</div>
+              <div style={{ fontSize: 11, color: '#999' }}>Free plan</div>
             </div>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ color: '#334155', flexShrink: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ color: '#ccc', flexShrink: 0 }}>
               <circle cx="7" cy="4" r="1" fill="currentColor"/>
               <circle cx="7" cy="7" r="1" fill="currentColor"/>
               <circle cx="7" cy="10" r="1" fill="currentColor"/>
@@ -272,27 +272,27 @@ function ConvoItem({ convo, active, onSelect }: { convo: Conversation; active: b
       onClick={() => onSelect(convo.id)}
       style={{
         padding: '8px 10px', borderRadius: 7, cursor: 'pointer',
-        background: active ? 'rgba(91,106,240,0.12)' : 'transparent',
-        border: `1px solid ${active ? 'rgba(91,106,240,0.2)' : 'transparent'}`,
+        background: active ? '#e3f2fd' : 'transparent',
+        border: `1px solid ${active ? '#90caf9' : 'transparent'}`,
         transition: 'all 0.15s', marginBottom: 2,
       }}
-      onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+      onMouseEnter={e => { if (!active) e.currentTarget.style.background = '#f0f0f0' }}
       onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <span style={{
           fontSize: 12, fontWeight: 500,
-          color: active ? '#c7d2fe' : '#64748b',
+          color: active ? '#1976d2' : '#666',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1,
         }}>
           {convo.title}
         </span>
-        <span style={{ fontSize: 10, color: '#334155', flexShrink: 0 }}>
+        <span style={{ fontSize: 10, color: '#999', flexShrink: 0 }}>
           {timeAgoShort(convo.timestamp)}
         </span>
       </div>
       <div style={{
-        fontSize: 11, color: '#334155', marginTop: 3,
+        fontSize: 11, color: '#999', marginTop: 3,
         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
       }}>
         {convo.preview}
