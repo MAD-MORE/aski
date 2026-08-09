@@ -151,7 +151,7 @@ export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
       </div>
 
       {/* Suggested Questions Section - Interaction Pattern */}
-      <div style={{ width: '100%', maxWidth: 760 }}>
+      <div style={{ width: '100%', maxWidth: 800 }}>
         <p style={{
           ...DESIGN_SYSTEM.typography.caption,
           color: DESIGN_SYSTEM.colors.textTertiary,
@@ -164,10 +164,10 @@ export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
           Suggested Questions
         </p>
 
-        {/* Grid - Consistent Layout (FIXED: proper centering) */}
+        {/* Grid - Responsive Layout with better spacing */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: DESIGN_SYSTEM.spacing.md,
           marginTop: DESIGN_SYSTEM.spacing.lg,
         }}>
@@ -188,6 +188,7 @@ export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
                 transition: `all ${DESIGN_SYSTEM.transitions.normal}`,
                 fontFamily: 'Outfit, sans-serif',
                 width: '100%',
+                minHeight: '120px',
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.background = '#f0f0f0'
