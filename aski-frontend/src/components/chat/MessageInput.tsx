@@ -3,10 +3,9 @@ import { useState, useRef, type KeyboardEvent } from 'react'
 interface MessageInputProps {
   onSend: (text: string) => void
   disabled?: boolean
-  designSystem?: any
 }
 
-export default function MessageInput({ onSend, disabled, designSystem }: MessageInputProps) {
+export default function MessageInput({ onSend, disabled }: MessageInputProps) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -42,21 +41,6 @@ export default function MessageInput({ onSend, disabled, designSystem }: Message
       borderTop: '1px solid #e8e8e8',
       background: '#ffffff',
     }}>
-      <style>{`
-        textarea::placeholder {
-          color: #999;
-          opacity: 1;
-        }
-        textarea::-webkit-input-placeholder {
-          color: #999;
-        }
-        textarea::-moz-placeholder {
-          color: #999;
-        }
-        textarea:-ms-input-placeholder {
-          color: #999;
-        }
-      `}</style>
       <div style={{
         display: 'flex', alignItems: 'flex-end', gap: 12,
         background: '#fafafa',
@@ -99,7 +83,7 @@ export default function MessageInput({ onSend, disabled, designSystem }: Message
           onChange={e => setValue(e.target.value)}
           onKeyDown={handleKey}
           onInput={handleInput}
-          placeholder="Ask Aski AI anything about education, courses, admissions, bursaries, and more..."
+          placeholder="Ask Aski anything about education..."
           rows={1}
           style={{
             flex: 1, background: 'none', border: 'none', outline: 'none', resize: 'none',
