@@ -109,7 +109,7 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
     setMessages(nextMessages)
     setIsLoading(true)
 
-    await new Promise(r => setTimeout(r, 1800 + Math.random() * 1000))
+    await new Promise(r => setTimeout(r, 1200 + Math.random() * 800))
 
     const response = generateAIResponse(text)
     const aiMsg: Message = {
@@ -117,8 +117,6 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
       role: 'ai',
       content: response.content,
       status: 'sent',
-      sources: response.sources,
-      confidence: response.confidence,
       timestamp: new Date(),
     }
 
@@ -306,9 +304,14 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
           {!hasMessages ? (
             <WelcomeScreen onQuestion={sendMessage} />
           ) : (
-            <div style={{ maxWidth: 820, margin: '0 auto' }}>
-              {messages.map(msg => (
-                <MessageBubble key={msg.id} message={msg} />
+            <div
+              role="log"
+              aria-live="polite"
+              aria-relevant="additions"
+              style={{ maxWidth: 820, margin: '0 auto' }}
+            >
+              {messages.map((msg, i) => (
+                <MessageBubble key={msg.id} message={msg} isLatest={i === messages.length - 1} />
               ))}
               <div ref={bottomRef} />
             </div>
@@ -322,7 +325,7 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
           width: '100%',
           background: DESIGN_SYSTEM.colors.background,
         }}>
-          <MessageInput onSend={sendMessage} disabled={isLoading} designSystem={DESIGN_SYSTEM} />
+          <MessageInput onSend={sendMessage} disabled={isLoading} />
         </div>
       </div>
     </div>
