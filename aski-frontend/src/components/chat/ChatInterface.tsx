@@ -107,7 +107,7 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
   return (
     <div style={{
       display: 'flex', height: '100vh', overflow: 'hidden',
-      background: '#0b1120', fontFamily: 'Outfit, sans-serif',
+      background: '#ffffff', fontFamily: 'Outfit, sans-serif',
     }}>
       <style>{`
         @media (max-width: 768px) {
@@ -145,8 +145,8 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
         <div style={{
           height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 20px',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          background: 'rgba(11,17,32,0.8)', backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid rgba(0,0,0,0.08)',
+          background: '#ffffff', backdropFilter: 'blur(12px)',
           flexShrink: 0, zIndex: 10,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -156,7 +156,7 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
               className="mobile-menu-btn"
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: '#64748b', padding: 4, display: 'none',
+                color: '#666', padding: 4, display: 'none',
               }}
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -166,12 +166,12 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
             <div>
               <h1 style={{
                 fontFamily: 'DM Serif Display, Georgia, serif',
-                fontSize: 16, color: '#f0f4ff', margin: 0, letterSpacing: '-0.01em',
+                fontSize: 16, color: '#000', margin: 0, letterSpacing: '-0.01em',
               }}>
                 {activeConvo?.title || 'New Chat'}
               </h1>
               {hasMessages && (
-                <p style={{ fontSize: 11, color: '#475569', margin: 0, marginTop: 1 }}>
+                <p style={{ fontSize: 11, color: '#999', margin: 0, marginTop: 1 }}>
                   {messages.filter(m => m.role === 'user').length} question{messages.filter(m => m.role === 'user').length !== 1 ? 's' : ''} asked
                 </p>
               )}
@@ -184,13 +184,13 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
                 onClick={startNewChat}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                  background: '#f5f5f5', border: '1px solid #ddd',
                   borderRadius: 7, padding: '6px 12px', cursor: 'pointer',
-                  color: '#64748b', fontSize: 12, fontFamily: 'Outfit, sans-serif',
+                  color: '#666', fontSize: 12, fontFamily: 'Outfit, sans-serif',
                   transition: 'all 0.15s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)' }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#efefef'; e.currentTarget.style.borderColor = '#ccc' }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#f5f5f5'; e.currentTarget.style.borderColor = '#ddd' }}
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                   <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -200,7 +200,7 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
             )}
             <div style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(16,217,160,0.08)', border: '1px solid rgba(16,217,160,0.2)',
+              background: '#f0f9f7', border: '1px solid #d0ebe5',
               borderRadius: 7, padding: '5px 10px',
             }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10d9a0', display: 'block', flexShrink: 0 }} />
@@ -210,7 +210,7 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
         </div>
 
         {/* Messages area */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', background: '#fafafa' }}>
           {!hasMessages ? (
             <WelcomeScreen onQuestion={sendMessage} />
           ) : (
@@ -224,7 +224,7 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
         </div>
 
         {/* Input */}
-        <div style={{ maxWidth: 760, margin: '0 auto', width: '100%' }}>
+        <div style={{ maxWidth: 760, margin: '0 auto', width: '100%', background: '#ffffff' }}>
           <MessageInput onSend={sendMessage} disabled={isLoading} />
         </div>
       </div>
