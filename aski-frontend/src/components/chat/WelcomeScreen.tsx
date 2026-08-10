@@ -1,46 +1,8 @@
 import { SUGGESTED_QUESTIONS } from './mockData'
+import { DESIGN_SYSTEM } from './theme'
 
 interface WelcomeScreenProps {
   onQuestion: (q: string) => void
-}
-
-// Design System (Consistency)
-const DESIGN_SYSTEM = {
-  colors: {
-    background: '#ffffff',
-    surface: '#fafafa',
-    text: '#000000',
-    textSecondary: '#666666',
-    textTertiary: '#999999',
-    primary: '#5b6af0',
-    accent: '#10d9a0',
-  },
-  spacing: {
-    xs: 8,
-    sm: 12,
-    md: 16,
-    lg: 24,
-    xl: 32,
-  },
-  typography: {
-    headingLarge: { fontSize: 36, fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.02em' },
-    headingMedium: { fontSize: 20, fontWeight: 600, lineHeight: 1.3 },
-    body: { fontSize: 16, fontWeight: 400, lineHeight: 1.7 },
-    bodySmall: { fontSize: 14, fontWeight: 500, lineHeight: 1.6 },
-    caption: { fontSize: 13, fontWeight: 600, lineHeight: 1.4 },
-  },
-  radius: {
-    md: 12,
-    lg: 16,
-  },
-  shadows: {
-    card: '0 2px 8px rgba(0, 0, 0, 0.08)',
-    hover: '0 8px 24px rgba(91, 106, 240, 0.2)',
-  },
-  transitions: {
-    fast: '0.15s',
-    normal: '0.2s',
-  },
 }
 
 export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
@@ -119,6 +81,9 @@ export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
           }}>
             <h1 style={{
               ...DESIGN_SYSTEM.typography.headingLarge,
+              fontSize: 'clamp(26px, 7vw, 36px)',
+              lineHeight: 1.2,
+              letterSpacing: '-0.02em',
               color: DESIGN_SYSTEM.colors.text,
               margin: 0,
             }}>
@@ -127,6 +92,7 @@ export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
 
             <p style={{
               ...DESIGN_SYSTEM.typography.body,
+              fontSize: 16,
               color: DESIGN_SYSTEM.colors.textSecondary,
               margin: 0,
               lineHeight: 1.6,

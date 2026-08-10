@@ -1,22 +1,23 @@
 import { useEffect, useState, useRef } from 'react'
 import type { Message } from './types'
+import { DESIGN_SYSTEM } from './theme'
 
 interface MessageBubbleProps {
   message: Message
   isLatest?: boolean
 }
 
-// Same tokens as ChatInterface / WelcomeScreen — single source of truth
-// for the "pure white" interface theme.
+// Local aliases so the rest of this file didn't need a mechanical
+// find-and-replace when it moved onto the shared token file.
 const COLORS = {
-  background: '#ffffff',
-  surface: '#f7f7f8',
+  background: DESIGN_SYSTEM.colors.background,
+  surface: DESIGN_SYSTEM.colors.surfaceAlt,
   border: '#e5e5e5',
-  text: '#0f0f0f',
+  text: DESIGN_SYSTEM.colors.text,
   textSecondary: '#6b7280',
   textTertiary: '#9ca3af',
-  primary: '#5b6af0',
-  accent: '#10d9a0',
+  primary: DESIGN_SYSTEM.colors.primary,
+  accent: DESIGN_SYSTEM.colors.accent,
 }
 
 function formatTime(date: Date) {
@@ -140,7 +141,7 @@ export default function MessageBubble({ message, isLatest }: MessageBubbleProps)
             padding: '12px 16px',
             borderRadius: isUser ? '14px 4px 14px 14px' : '4px 14px 14px 14px',
             background: isUser
-              ? `linear-gradient(135deg, ${COLORS.primary}, #7c3aed)`
+              ? `linear-gradient(135deg, ${COLORS.primary}, ${DESIGN_SYSTEM.colors.primaryDark})`
               : isError
                 ? '#fef2f2'
                 : COLORS.surface,

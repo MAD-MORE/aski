@@ -5,6 +5,7 @@ import MessageBubble from './MessageBubble'
 import MessageInput from './MessageInput'
 import type { Message, Conversation } from './types'
 import { generateAIResponse } from './mockData'
+import { DESIGN_SYSTEM, MEDIA } from './theme'
 
 interface ChatInterfaceProps {
   onBack: () => void
@@ -14,51 +15,6 @@ function genId() {
   return Math.random().toString(36).slice(2)
 }
 
-// Design System Constants (Single Source of Truth)
-const DESIGN_SYSTEM = {
-  colors: {
-    background: '#ffffff',
-    surface: '#fafafa',
-    border: '#e0e0e0',
-    text: '#000000',
-    textSecondary: '#666666',
-    textTertiary: '#999999',
-    primary: '#5b6af0',
-    accent: '#10d9a0',
-    error: '#ff4444',
-  },
-  spacing: {
-    xs: 8,
-    sm: 12,
-    md: 16,
-    lg: 24,
-    xl: 32,
-  },
-  typography: {
-    headingLarge: { fontSize: 20, fontWeight: 700, lineHeight: 1.2 },
-    headingMedium: { fontSize: 18, fontWeight: 600, lineHeight: 1.3 },
-    body: { fontSize: 15, fontWeight: 400, lineHeight: 1.6 },
-    bodySmall: { fontSize: 13, fontWeight: 500, lineHeight: 1.5 },
-    caption: { fontSize: 12, fontWeight: 500, lineHeight: 1.4 },
-    captionSmall: { fontSize: 11, fontWeight: 600, lineHeight: 1.3 },
-  },
-  radius: {
-    sm: 8,
-    md: 12,
-    lg: 16,
-  },
-  shadows: {
-    light: '0 2px 8px rgba(0, 0, 0, 0.06)',
-    medium: '0 4px 16px rgba(0, 0, 0, 0.1)',
-    hover: '0 8px 24px rgba(91, 106, 240, 0.15)',
-  },
-  transitions: {
-    fast: '0.15s',
-    normal: '0.2s',
-    slow: '0.3s',
-  },
-}
-
 export default function ChatInterface({ onBack }: ChatInterfaceProps) {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -66,6 +22,11 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  // Lets the input box interrupt an in-flight response — a standard
+  // AI-chat affordance (ChatGPT/Claude both offer "Stop generating").
+  // Using a ref (not state) means the async sendMessage closure can
+  // read the latest value without being re-created on every render.
+  const cancelledRef = useRef(false)
 
   const activeConvo = conversations.find(c => c.id === activeId)
   const hasMessages = messages.length > 0
@@ -86,8 +47,17 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
     setSidebarOpen(false)
   }
 
+  const stopGenerating = () => {
+    cancelledRef.current = true
+    setIsLoading(false)
+    setMessages(prev =>
+      prev.map(m => (m.status === 'loading' ? { ...m, status: 'error', content: 'Stopped.' } : m))
+    )
+  }
+
   const sendMessage = async (text: string) => {
     if (isLoading) return
+    cancelledRef.current = false
 
     const userMsg: Message = {
       id: genId(),
@@ -110,6 +80,7 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
     setIsLoading(true)
 
     await new Promise(r => setTimeout(r, 1200 + Math.random() * 800))
+    if (cancelledRef.current) return // user hit Stop while we were "thinking"
 
     const response = generateAIResponse(text)
     const aiMsg: Message = {
@@ -148,13 +119,13 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
   return (
     <div style={{
       display: 'flex',
-      height: '100vh',
+      height: '100dvh',
       overflow: 'hidden',
       background: DESIGN_SYSTEM.colors.background,
       fontFamily: 'Outfit, sans-serif',
     }}>
       <style>{`
-        @media (max-width: 768px) {
+        ${MEDIA.tablet} {
           .sidebar {
             position: fixed !important;
             top: 0; left: 0; bottom: 0;
@@ -167,6 +138,15 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
           }
           .mobile-overlay { display: block !important; }
           .mobile-menu-btn { display: flex !important; }
+          .app-header { padding-left: ${DESIGN_SYSTEM.spacing.md}px !important; padding-right: ${DESIGN_SYSTEM.spacing.md}px !important; }
+        }
+        ${MEDIA.mobile} {
+          .app-header { padding-left: ${DESIGN_SYSTEM.spacing.sm}px !important; padding-right: ${DESIGN_SYSTEM.spacing.sm}px !important; gap: ${DESIGN_SYSTEM.spacing.xs}px; }
+          .header-subtitle { display: none !important; }
+          .new-chat-label { display: none !important; }
+          .new-chat-btn { padding: 0 !important; width: ${DESIGN_SYSTEM.touchTarget}px !important; justify-content: center !important; }
+          .status-label { display: none !important; }
+          .status-pill { padding: ${DESIGN_SYSTEM.spacing.xs}px !important; }
         }
       `}</style>
 
@@ -183,51 +163,72 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
       {/* Main chat area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        {/* Header (Topbar) - Consistent Visual Hierarchy */}
-        <div style={{
-          height: 64,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: `0 ${DESIGN_SYSTEM.spacing.lg}px`,
-          borderBottom: `1px solid ${DESIGN_SYSTEM.colors.border}`,
-          background: DESIGN_SYSTEM.colors.background,
-          flexShrink: 0,
-          zIndex: 10,
-        }}>
-          {/* Title Section - Clear Information Architecture */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: DESIGN_SYSTEM.spacing.md }}>
+        {/* Header (Topbar) — responsive, safe-area aware, consistent hierarchy */}
+        <header
+          className="app-header"
+          style={{
+            minHeight: 64,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: DESIGN_SYSTEM.spacing.sm,
+            padding: `env(safe-area-inset-top, 0px) ${DESIGN_SYSTEM.spacing.lg}px 0`,
+            borderBottom: `1px solid ${DESIGN_SYSTEM.colors.border}`,
+            background: DESIGN_SYSTEM.colors.background,
+            flexShrink: 0,
+            zIndex: 10,
+            boxSizing: 'border-box',
+          }}
+        >
+          {/* Title Section — shrinks and truncates instead of wrapping/overflowing */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: DESIGN_SYSTEM.spacing.md, minWidth: 0, flex: 1, height: 64 }}>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="mobile-menu-btn"
+              aria-label="Toggle conversation list"
+              aria-expanded={sidebarOpen}
               style={{
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
                 color: DESIGN_SYSTEM.colors.textSecondary,
-                padding: DESIGN_SYSTEM.spacing.sm,
+                width: DESIGN_SYSTEM.touchTarget,
+                height: DESIGN_SYSTEM.touchTarget,
                 display: 'none',
-                transition: `color ${DESIGN_SYSTEM.transitions.fast}`,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                borderRadius: DESIGN_SYSTEM.radius.sm,
+                transition: `color ${DESIGN_SYSTEM.transitions.fast}, background ${DESIGN_SYSTEM.transitions.fast}`,
               }}
+              onMouseEnter={e => { e.currentTarget.style.background = DESIGN_SYSTEM.colors.surface }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
             >
               <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
                 <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
             </button>
-            <div>
-              <h1 style={{
-                ...DESIGN_SYSTEM.typography.headingMedium,
-                color: DESIGN_SYSTEM.colors.text,
-                margin: 0,
-                letterSpacing: '-0.01em',
-              }}>
+            <div style={{ minWidth: 0 }}>
+              <h1
+                title={activeConvo?.title || 'New Chat'}
+                style={{
+                  ...DESIGN_SYSTEM.typography.headingMedium,
+                  color: DESIGN_SYSTEM.colors.text,
+                  margin: 0,
+                  letterSpacing: '-0.01em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
                 {activeConvo?.title || 'New Chat'}
               </h1>
               {hasMessages && (
-                <p style={{
+                <p className="header-subtitle" style={{
                   ...DESIGN_SYSTEM.typography.captionSmall,
                   color: DESIGN_SYSTEM.colors.textTertiary,
                   margin: `${DESIGN_SYSTEM.spacing.xs}px 0 0 0`,
+                  whiteSpace: 'nowrap',
                 }}>
                   {messages.filter(m => m.role === 'user').length} question{messages.filter(m => m.role === 'user').length !== 1 ? 's' : ''}
                 </p>
@@ -235,11 +236,13 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
             </div>
           </div>
 
-          {/* Action Section - Clear Affordances */}
-          <div style={{ display: 'flex', gap: DESIGN_SYSTEM.spacing.md, alignItems: 'center' }}>
+          {/* Action Section — collapses to icon-only affordances on small screens */}
+          <div style={{ display: 'flex', gap: DESIGN_SYSTEM.spacing.sm, alignItems: 'center', flexShrink: 0 }}>
             {hasMessages && (
               <button
                 onClick={startNewChat}
+                className="new-chat-btn"
+                aria-label="Start a new chat"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -247,7 +250,8 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
                   background: DESIGN_SYSTEM.colors.surface,
                   border: `1px solid ${DESIGN_SYSTEM.colors.border}`,
                   borderRadius: DESIGN_SYSTEM.radius.md,
-                  padding: `${DESIGN_SYSTEM.spacing.sm}px ${DESIGN_SYSTEM.spacing.md}px`,
+                  padding: `0 ${DESIGN_SYSTEM.spacing.md}px`,
+                  height: DESIGN_SYSTEM.touchTarget,
                   cursor: 'pointer',
                   color: DESIGN_SYSTEM.colors.textSecondary,
                   ...DESIGN_SYSTEM.typography.caption,
@@ -262,22 +266,29 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
                   e.currentTarget.style.borderColor = DESIGN_SYSTEM.colors.border
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+                <svg width="14" height="14" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
                   <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
-                New Chat
+                <span className="new-chat-label">New Chat</span>
               </button>
             )}
-            {/* Status Indicator - Feedback Principle */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: DESIGN_SYSTEM.spacing.sm,
-              background: `${DESIGN_SYSTEM.colors.accent}15`,
-              border: `1px solid ${DESIGN_SYSTEM.colors.accent}30`,
-              borderRadius: DESIGN_SYSTEM.radius.md,
-              padding: `${DESIGN_SYSTEM.spacing.sm}px ${DESIGN_SYSTEM.spacing.md}px`,
-            }}>
+            {/* Status Indicator — decorative, so it's hidden from assistive tech
+                rather than announced as a redundant "Online" every page load */}
+            <div
+              className="status-pill"
+              aria-hidden="true"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: DESIGN_SYSTEM.spacing.sm,
+                background: `${DESIGN_SYSTEM.colors.accent}15`,
+                border: `1px solid ${DESIGN_SYSTEM.colors.accent}30`,
+                borderRadius: DESIGN_SYSTEM.radius.md,
+                padding: `${DESIGN_SYSTEM.spacing.sm}px ${DESIGN_SYSTEM.spacing.md}px`,
+                height: DESIGN_SYSTEM.touchTarget,
+                boxSizing: 'border-box',
+              }}
+            >
               <span style={{
                 width: 8,
                 height: 8,
@@ -286,13 +297,14 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
                 display: 'block',
                 flexShrink: 0,
               }} />
-              <span style={{
+              <span className="status-label" style={{
                 ...DESIGN_SYSTEM.typography.captionSmall,
                 color: DESIGN_SYSTEM.colors.accent,
+                whiteSpace: 'nowrap',
               }}>Online</span>
             </div>
           </div>
-        </div>
+        </header>
 
         {/* Messages Container - Proper Content Area */}
         <div style={{
@@ -325,7 +337,7 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
           width: '100%',
           background: DESIGN_SYSTEM.colors.background,
         }}>
-          <MessageInput onSend={sendMessage} disabled={isLoading} />
+          <MessageInput onSend={sendMessage} onStop={stopGenerating} disabled={isLoading} isLoading={isLoading} />
         </div>
       </div>
     </div>
