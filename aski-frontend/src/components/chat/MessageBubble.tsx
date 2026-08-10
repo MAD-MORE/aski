@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import type { Message } from './types'
 import { DESIGN_SYSTEM } from './theme'
+import AskiMark from './AskiMark'
 
 interface MessageBubbleProps {
   message: Message
@@ -12,12 +13,13 @@ interface MessageBubbleProps {
 const COLORS = {
   background: DESIGN_SYSTEM.colors.background,
   surface: DESIGN_SYSTEM.colors.surfaceAlt,
-  border: '#e5e5e5',
+  border: DESIGN_SYSTEM.colors.border,
   text: DESIGN_SYSTEM.colors.text,
-  textSecondary: '#6b7280',
-  textTertiary: '#9ca3af',
+  textSecondary: DESIGN_SYSTEM.colors.textSecondary,
+  textTertiary: DESIGN_SYSTEM.colors.textTertiary,
   primary: DESIGN_SYSTEM.colors.primary,
   accent: DESIGN_SYSTEM.colors.accent,
+  positive: DESIGN_SYSTEM.colors.positive,
 }
 
 function formatTime(date: Date) {
@@ -32,9 +34,7 @@ function AiAvatar() {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       marginTop: 2,
     }}>
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <path d="M7 1.5L11.5 4v6L7 12.5 2.5 10V4L7 1.5z" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
-      </svg>
+      <AskiMark size={15} variant="white" />
     </div>
   )
 }
@@ -56,17 +56,23 @@ function CopyButton({ text }: { text: string }) {
       style={{
         display: 'flex', alignItems: 'center', gap: 4,
         background: 'none', border: 'none', cursor: 'pointer',
-        color: copied ? COLORS.accent : COLORS.textTertiary,
+        color: copied ? COLORS.positive : COLORS.textTertiary,
         fontSize: 11, fontFamily: 'Outfit, sans-serif', fontWeight: 500,
         padding: '2px 4px', transition: 'color 0.15s',
       }}
       onMouseEnter={e => { if (!copied) e.currentTarget.style.color = COLORS.textSecondary }}
       onMouseLeave={e => { if (!copied) e.currentTarget.style.color = COLORS.textTertiary }}
     >
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-        <rect x="4" y="4" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.1" />
-        <path d="M2.5 8V2.5A1 1 0 013.5 1.5H8" stroke="currentColor" strokeWidth="1.1" />
-      </svg>
+      {copied ? (
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2.5 6.5L5 9L9.5 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ) : (
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <rect x="4" y="4" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.1" />
+          <path d="M2.5 8V2.5A1 1 0 013.5 1.5H8" stroke="currentColor" strokeWidth="1.1" />
+        </svg>
+      )}
       {copied ? 'Copied' : 'Copy'}
     </button>
   )

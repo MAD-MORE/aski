@@ -281,8 +281,8 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: DESIGN_SYSTEM.spacing.sm,
-                background: `${DESIGN_SYSTEM.colors.accent}15`,
-                border: `1px solid ${DESIGN_SYSTEM.colors.accent}30`,
+                background: `${DESIGN_SYSTEM.colors.positive}15`,
+                border: `1px solid ${DESIGN_SYSTEM.colors.positive}30`,
                 borderRadius: DESIGN_SYSTEM.radius.md,
                 padding: `${DESIGN_SYSTEM.spacing.sm}px ${DESIGN_SYSTEM.spacing.md}px`,
                 height: DESIGN_SYSTEM.touchTarget,
@@ -293,13 +293,13 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                background: DESIGN_SYSTEM.colors.accent,
+                background: DESIGN_SYSTEM.colors.positive,
                 display: 'block',
                 flexShrink: 0,
               }} />
               <span className="status-label" style={{
                 ...DESIGN_SYSTEM.typography.captionSmall,
-                color: DESIGN_SYSTEM.colors.accent,
+                color: DESIGN_SYSTEM.colors.positive,
                 whiteSpace: 'nowrap',
               }}>Online</span>
             </div>

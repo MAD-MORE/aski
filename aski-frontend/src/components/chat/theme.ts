@@ -8,6 +8,15 @@
  * grows. Pulling it into one module means a token change here
  * propagates everywhere it's used, instead of being fixed in one
  * component and silently stale in the others.
+ *
+ * Palette: "Palm & Gari" — grounded in the product's actual subject
+ * (Ghanaian tertiary admissions) rather than a generic indigo/purple
+ * AI-startup gradient. Palm (deep emerald) is the primary brand
+ * color; Gari (warm gold) is used sparingly for accents that carry
+ * an "excellence / certified" connotation — a scholarship badge, a
+ * distinction grade. `positive` is a separate, plainer green kept
+ * only for status semantics (online/success), so the decorative
+ * brand gold never gets confused with a status signal.
  */
 
 export const BREAKPOINTS = {
@@ -18,22 +27,24 @@ export const BREAKPOINTS = {
 export const MEDIA = {
   mobile: `@media (max-width: ${BREAKPOINTS.mobile}px)`,
   tablet: `@media (max-width: ${BREAKPOINTS.tablet}px)`,
+  reducedMotion: '@media (prefers-reduced-motion: reduce)',
 } as const
 
 export const DESIGN_SYSTEM = {
   colors: {
     background: '#ffffff',
-    surface: '#fafafa',
-    surfaceAlt: '#f7f7f8',
-    border: '#e0e0e0',
-    borderStrong: '#ddd',
-    text: '#0f0f0f',
-    textSecondary: '#666666',
-    textTertiary: '#999999',
-    primary: '#5b6af0',
-    primaryDark: '#7c3aed',
-    accent: '#10d9a0',
-    error: '#ff4444',
+    surface: '#F5F7F5',
+    surfaceAlt: '#F0F3EF',
+    border: '#E3E7E1',
+    borderStrong: '#D6DBD3',
+    text: '#161B18',
+    textSecondary: '#5B6359',
+    textTertiary: '#93998F',
+    primary: '#0B6B4F',      // Palm — deep emerald, brand primary
+    primaryDark: '#084A37',  // Palm, shaded — gradients & hover
+    accent: '#D9A62E',       // Gari — warm gold, decorative/brand accent only
+    positive: '#1C8F63',     // status green — kept distinct from accent
+    error: '#C81E3A',
   },
   spacing: {
     xs: 8,
@@ -56,9 +67,9 @@ export const DESIGN_SYSTEM = {
     lg: 16,
   },
   shadows: {
-    light: '0 2px 8px rgba(0, 0, 0, 0.06)',
-    medium: '0 4px 16px rgba(0, 0, 0, 0.1)',
-    hover: '0 8px 24px rgba(91, 106, 240, 0.15)',
+    light: '0 2px 8px rgba(11, 27, 20, 0.06)',
+    medium: '0 4px 16px rgba(11, 27, 20, 0.1)',
+    hover: '0 8px 24px rgba(11, 107, 79, 0.18)',
   },
   transitions: {
     fast: '0.15s',

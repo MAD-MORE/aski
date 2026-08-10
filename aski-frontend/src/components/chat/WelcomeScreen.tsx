@@ -1,5 +1,6 @@
 import { SUGGESTED_QUESTIONS } from './mockData'
 import { DESIGN_SYSTEM } from './theme'
+import AskiMark from './AskiMark'
 
 interface WelcomeScreenProps {
   onQuestion: (q: string) => void
@@ -34,8 +35,10 @@ export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
           gap: DESIGN_SYSTEM.spacing.lg,
           marginBottom: DESIGN_SYSTEM.spacing.sm,
         }}>
-          {/* Avatar */}
-          <div style={{
+          {/* Avatar — the Aski seal, given one deliberate on-mount
+              flourish (a "stamp" settle) instead of a looping pulse
+              ring. Respects prefers-reduced-motion. */}
+          <div className="hero-mark" style={{
             width: 88,
             height: 88,
             borderRadius: DESIGN_SYSTEM.radius.lg,
@@ -46,28 +49,16 @@ export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
             boxShadow: `0 12px 40px ${DESIGN_SYSTEM.colors.primary}30`,
             position: 'relative',
           }}>
-            <svg width="44" height="44" viewBox="0 0 34 34" fill="none">
-              <path d="M17 3L30 10v14L17 31 4 24V10L17 3z" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
-              <circle cx="17" cy="17" r="4" fill="white"/>
-              <circle cx="17" cy="9" r="1.5" fill="rgba(255,255,255,0.6)"/>
-              <circle cx="17" cy="25" r="1.5" fill="rgba(255,255,255,0.6)"/>
-              <circle cx="9" cy="13" r="1.5" fill="rgba(255,255,255,0.6)"/>
-              <circle cx="25" cy="13" r="1.5" fill="rgba(255,255,255,0.6)"/>
-              <circle cx="9" cy="21" r="1.5" fill="rgba(255,255,255,0.6)"/>
-              <circle cx="25" cy="21" r="1.5" fill="rgba(255,255,255,0.6)"/>
-            </svg>
-            {/* Pulse Ring */}
-            <div style={{
-              position: 'absolute',
-              inset: -12,
-              borderRadius: DESIGN_SYSTEM.radius.lg,
-              border: `2px solid ${DESIGN_SYSTEM.colors.primary}15`,
-              animation: 'pulse-ring 2.5s ease-out infinite',
-            }} />
+            <AskiMark size={44} variant="white" />
             <style>{`
-              @keyframes pulse-ring {
-                0% { transform: scale(1); opacity: 0.8; }
-                100% { transform: scale(1.2); opacity: 0; }
+              .hero-mark { animation: aski-stamp 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+              @keyframes aski-stamp {
+                0% { transform: scale(1.3) rotate(-8deg); opacity: 0; }
+                60% { transform: scale(0.94) rotate(2deg); opacity: 1; }
+                100% { transform: scale(1) rotate(0deg); opacity: 1; }
+              }
+              @media (prefers-reduced-motion: reduce) {
+                .hero-mark { animation: none; }
               }
             `}</style>
           </div>
@@ -81,9 +72,11 @@ export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
           }}>
             <h1 style={{
               ...DESIGN_SYSTEM.typography.headingLarge,
-              fontSize: 'clamp(26px, 7vw, 36px)',
+              fontFamily: 'DM Serif Display, Georgia, serif',
+              fontWeight: 400,
+              fontSize: 'clamp(28px, 7vw, 40px)',
               lineHeight: 1.2,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.01em',
               color: DESIGN_SYSTEM.colors.text,
               margin: 0,
             }}>
@@ -115,8 +108,8 @@ export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
           {[
             { label: 'Admissions', color: DESIGN_SYSTEM.colors.primary },
             { label: 'Scholarships', color: DESIGN_SYSTEM.colors.accent },
-            { label: 'Courses', color: '#a78bfa' },
-            { label: 'Aggregate Calc', color: '#f59e0b' },
+            { label: 'Courses', color: DESIGN_SYSTEM.colors.primary },
+            { label: 'Aggregate Calc', color: DESIGN_SYSTEM.colors.accent },
             { label: 'Rankings', color: DESIGN_SYSTEM.colors.primary },
             { label: 'Careers', color: DESIGN_SYSTEM.colors.accent },
           ].map(pill => (
@@ -180,7 +173,7 @@ export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
                   alignItems: 'flex-start',
                   gap: DESIGN_SYSTEM.spacing.sm,
                   background: DESIGN_SYSTEM.colors.surface,
-                  border: `1.5px solid #e5e5e5`,
+                  border: `1.5px solid ${DESIGN_SYSTEM.colors.border}`,
                   borderRadius: DESIGN_SYSTEM.radius.md,
                   padding: DESIGN_SYSTEM.spacing.md,
                   cursor: 'pointer',
@@ -199,7 +192,7 @@ export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.background = DESIGN_SYSTEM.colors.surface
-                  e.currentTarget.style.borderColor = '#e5e5e5'
+                  e.currentTarget.style.borderColor = DESIGN_SYSTEM.colors.border
                   e.currentTarget.style.boxShadow = 'none'
                   e.currentTarget.style.transform = 'translateY(0)'
                 }}
