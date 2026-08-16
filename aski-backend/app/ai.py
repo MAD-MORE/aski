@@ -38,6 +38,27 @@ def _clean_answer(text):
     return re.sub(r"https?://[^\s)\]>]+", "", text or "").strip()
 
 
+def _source_fallback(question, context):
+    """Keep ASKI useful when an external model quota is exhausted.
+
+    This is deliberately extractive: it never invents facts and only exposes
+    verified context already selected by the RAG layer.
+    """
+    if not context:
+        return "I can't answer that yet because I don't have enough verified UCC information for this question."
+
+    snippets = []
+    for item in context[:3]:
+        title = item.get("title") or "UCC source"
+        content = re.sub(r"\s+", " ", item.get("content", "")).strip()
+        if content:
+            snippets.append(f"From {title}: {content[:700]}")
+
+    if not snippets:
+        return "I found relevant UCC sources, but they do not contain enough text to answer this question right now."
+    return "The AI model is temporarily unavailable, so I'm giving you the verified information available in the UCC knowledge base:\n\n" + "\n\n".join(snippets)
+
+
 def _openrouter_answer(prompt):
     key = os.getenv("OPENROUTER_API_KEY")
     if not key:
@@ -54,7 +75,9 @@ def _openrouter_answer(prompt):
             detail = response.json()
         except Exception:
             detail = response.text[:500]
-        raise RuntimeError(f"AI provider returned HTTP {response.status_code}: {detail}")
+        error = RuntimeError(f"AI provider returned HTTP {response.status_code}: {detail}")
+        error.status_code = response.status_code
+        raise error
     data = response.json()
     text = data.get("choices", [{}])[0].get("message", {}).get("content")
     if not text:
@@ -71,16 +94,39 @@ def _openai_answer(prompt):
 
 def generate_answer(question, context, history=None, profile=None):
     prompt = _build_prompt(question, context, history, profile)
+
+    # Prefer a configured paid/organization model when available. This avoids
+    # consuming OpenRouter's shared free-model daily quota unnecessarily.
+    if os.getenv("OPENAI_API_KEY"):
+        try:
+            return _openai_answer(prompt)
+        except Exception:
+            pass
+
     try:
         result = _openrouter_answer(prompt)
         if result:
             return result
     except Exception as openrouter_exc:
-        if not os.getenv("OPENAI_API_KEY"):
-            return {"answer": f"AI provider error: {openrouter_exc}", "provider": "openrouter"}
-    if os.getenv("OPENAI_API_KEY"):
-        try:
-            return _openai_answer(prompt)
-        except Exception as exc:
-            return {"answer": f"AI provider error: {exc}", "provider": "openai"}
-    return {"answer": "No AI provider is configured. Add OPENROUTER_API_KEY to use ASKI's free AI provider.", "provider": "not_configured"}
+        # A 429 is a provider quota problem, not an ASKI knowledge failure.
+        # Fall back to verified RAG content instead of displaying a raw stack/error.
+        if getattr(openrouter_exc, "status_code", None) == 429:
+            return {
+                "answer": _source_fallback(question, context),
+                "provider": "ucc-knowledge-fallback",
+                "model": None,
+                "provider_warning": "AI model quota temporarily exhausted",
+            }
+        return {
+            "answer": _source_fallback(question, context),
+            "provider": "ucc-knowledge-fallback",
+            "model": None,
+            "provider_warning": str(openrouter_exc),
+        }
+
+    return {
+        "answer": _source_fallback(question, context),
+        "provider": "ucc-knowledge-fallback",
+        "model": None,
+        "provider_warning": "No AI provider is configured",
+    }
