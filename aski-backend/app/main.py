@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+import requests
 
 from app.ai import generate_answer
 from app.ingestion import upsert_source
