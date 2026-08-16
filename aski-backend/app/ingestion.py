@@ -17,10 +17,18 @@ def _embedding_exists(document_id):
     if engine.dialect.name != "postgresql":
         return False
     with engine.begin() as conn:
-        return conn.execute(
-            text("SELECT 1 FROM knowledge_embeddings WHERE document_id = :id LIMIT 1"),
-            {"id": document_id},
-        ).first() is not None
+        return conn.execute(text("SELECT 1 FROM knowledge_embeddings WHERE document_id = :id LIMIT 1"), {"id": document_id}).first() is not None
+
+
+def _save_version(entry):
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO source_versions (document_id, title, content, content_hash, source, url)
+            VALUES (:id, :title, :content, :hash, :source, :url)
+        """), {
+            "id": entry.id, "title": entry.title, "content": entry.content,
+            "hash": entry.content_hash, "source": entry.source, "url": entry.url,
+        })
 
 
 def upsert_source(title, content, source, url=None):
@@ -34,11 +42,11 @@ def upsert_source(title, content, source, url=None):
     session = SessionLocal()
     content_hash = _content_hash(title, content)
     now = datetime.now(timezone.utc).replace(tzinfo=None)
+    changed = False
     try:
         entry = session.query(KnowledgeDocument).filter_by(source=source, title=title).first()
         if entry and entry.content_hash == content_hash:
             result = _serialize(entry)
-            # If an existing document predates embeddings, repair it automatically.
             needs_embedding = not _embedding_exists(entry.id)
             if needs_embedding:
                 try:
@@ -46,28 +54,36 @@ def upsert_source(title, content, source, url=None):
                 except Exception:
                     pass
             return result, False
+
         if entry:
+            # Preserve the previous verified state before replacing it.
+            try:
+                _save_version(entry)
+            except Exception:
+                pass
             entry.content = content
-            entry.url = url
+            entry.url = url or entry.url
             entry.content_hash = content_hash
             entry.updated_at = now
             session.commit()
             result = _serialize(entry)
+            changed = True
         else:
             entry = KnowledgeDocument(title=title, content=content, source=source, url=url, content_hash=content_hash)
             session.add(entry)
             session.commit()
             session.refresh(entry)
             result = _serialize(entry)
+            changed = True
     finally:
         session.close()
 
     try:
         upsert_embedding(result["id"], result["title"], result["content"])
     except Exception:
-        # Knowledge ingestion must remain usable if embeddings are unavailable.
+        # Ingestion remains usable; sync/backfill can repair vectors later.
         pass
-    return result, True
+    return result, changed
 
 
 def _serialize(row):
