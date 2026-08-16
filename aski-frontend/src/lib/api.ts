@@ -1,4 +1,4 @@
-import type { Message, Source } from '../components/chat/types'
+import type { AnswerMode, Message, Source } from '../components/chat/types'
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'https://aski-o7hl0rij6-padmoreyeboah123-1582s-projects.vercel.app').replace(/\/$/, '')
 
@@ -8,6 +8,10 @@ export interface AskResponse {
   provider?: string
   model?: string
   intent?: string
+  confidence?: number
+  last_verified?: string
+  conflict_summary?: string | null
+  follow_ups?: string[]
   sources?: Array<{
     title?: string
     url?: string
@@ -15,6 +19,7 @@ export interface AskResponse {
     retrieval?: string
     freshness?: string
     conflict_warning?: string | null
+    official?: boolean
   }>
 }
 
@@ -29,15 +34,17 @@ function toSource(source: ApiSource): Source {
     retrieval: source.retrieval,
     freshness: source.freshness,
     conflictWarning: source.conflict_warning || undefined,
+    official: source.official,
   }
 }
 
-export async function askAski(question: string, history: Message[] = []): Promise<AskResponse> {
+export async function askAski(question: string, history: Message[] = [], mode: AnswerMode = 'detailed'): Promise<AskResponse> {
   const response = await fetch(`${API_BASE}/api/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       question,
+      mode,
       session_id: getSessionId(),
       history: history.slice(-8).map(message => ({ role: message.role, content: message.content })),
     }),
