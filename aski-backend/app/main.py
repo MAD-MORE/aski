@@ -4,6 +4,7 @@ from app.ai import generate_answer
 from app.ingestion import upsert_source
 from app.knowledge import load_knowledge
 from app.retrieval import search_knowledge
+from app.web_ingestion import fetch_and_ingest
 
 app = Flask(__name__)
 
@@ -75,6 +76,24 @@ def ingest():
         "changed": changed_count,
         "items": results,
     })
+
+
+@app.post("/api/ingest/ucc")
+def ingest_ucc():
+    payload = request.get_json(silent=True) or {}
+    url = str(payload.get("url", "")).strip()
+
+    if not url:
+        return jsonify({"error": "url is required"}), 400
+
+    try:
+        entry, changed = fetch_and_ingest(url, payload.get("title"))
+    except requests.RequestException as exc:
+        return jsonify({"error": f"failed to fetch source: {exc}"}), 502
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    return jsonify({"item": entry, "changed": changed})
 
 
 @app.post("/api/ask")
