@@ -1,5 +1,6 @@
 export type MessageRole = 'user' | 'ai'
 export type MessageStatus = 'sent' | 'loading' | 'error'
+export type AnswerMode = 'quick' | 'detailed' | 'sources'
 
 export interface Source {
   title: string
@@ -9,6 +10,7 @@ export interface Source {
   retrieval?: string
   freshness?: string
   conflictWarning?: string
+  official?: boolean
 }
 
 export interface Message {
@@ -20,6 +22,9 @@ export interface Message {
   confidence?: number
   timestamp: Date
   provider?: string
+  followUps?: string[]
+  conflictSummary?: string
+  lastVerified?: string
 }
 
 export interface Conversation {
