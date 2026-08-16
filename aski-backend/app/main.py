@@ -1,16 +1,40 @@
-from flask import Flask, jsonify, request
+import os
+import time
+
 import requests
+from flask import Flask, jsonify, request
 
 from app.ai import generate_answer
 from app.auth import require_sync_token
 from app.health import system_health
 from app.ingestion import upsert_source
 from app.knowledge import load_knowledge
-from app.retrieval import search_knowledge
+from app.memory import add_message, get_history
+from app.rag import build_context
+from app.security import require_admin
 from app.sync import sync_ucc_sources
+from app.users import create_user, verify_user
 from app.web_ingestion import fetch_and_ingest
 
 app = Flask(__name__)
+_rate = {}
+
+
+def rate_limit():
+    key = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
+    now = time.time()
+    window = _rate.setdefault(key, [])
+    window[:] = [t for t in window if now - t < 60]
+    if len(window) >= int(os.getenv("ASKI_RATE_LIMIT", "60")):
+        return False
+    window.append(now)
+    return True
+
+
+@app.before_request
+def protect_requests():
+    if not rate_limit():
+        return jsonify({"error": "rate limit exceeded"}), 429
 
 
 @app.get("/")
@@ -32,72 +56,39 @@ def get_knowledge():
 @app.post("/api/knowledge")
 def add_knowledge():
     payload = request.get_json(silent=True) or {}
-    title = str(payload.get("title", "")).strip()
-    content = str(payload.get("content", "")).strip()
-    source = str(payload.get("source", "manual")).strip() or "manual"
-    url = payload.get("url")
-
-    if not title or not content:
-        return jsonify({"error": "title and content are required"}), 400
-
     try:
-        entry, changed = upsert_source(title, content, source, url)
+        entry, changed = upsert_source(payload.get("title", ""), payload.get("content", ""), payload.get("source", "manual"), payload.get("url"))
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
-
-    return jsonify({"item": entry, "changed": changed}), 200 if not changed else 201
+    return jsonify({"item": entry, "changed": changed}), 201 if changed else 200
 
 
 @app.post("/api/ingest")
 def ingest():
     payload = request.get_json(silent=True) or {}
     items = payload.get("items")
-
     if not isinstance(items, list) or not items:
         return jsonify({"error": "items must be a non-empty list"}), 400
-
-    results = []
-    changed_count = 0
-
+    results, changed_count = [], 0
     for item in items:
-        if not isinstance(item, dict):
-            return jsonify({"error": "each item must be an object"}), 400
-
         try:
-            entry, changed = upsert_source(
-                item.get("title", ""),
-                item.get("content", ""),
-                item.get("source", "manual"),
-                item.get("url"),
-            )
+            entry, changed = upsert_source(item.get("title", ""), item.get("content", ""), item.get("source", "manual"), item.get("url"))
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
-
         changed_count += int(changed)
         results.append(entry)
-
-    return jsonify({
-        "processed": len(results),
-        "changed": changed_count,
-        "items": results,
-    })
+    return jsonify({"processed": len(results), "changed": changed_count, "items": results})
 
 
 @app.post("/api/ingest/ucc")
 def ingest_ucc():
     payload = request.get_json(silent=True) or {}
-    url = str(payload.get("url", "")).strip()
-
-    if not url:
-        return jsonify({"error": "url is required"}), 400
-
     try:
-        entry, changed = fetch_and_ingest(url, payload.get("title"))
+        entry, changed = fetch_and_ingest(str(payload.get("url", "")).strip(), payload.get("title"))
     except requests.RequestException as exc:
         return jsonify({"error": f"failed to fetch source: {exc}"}), 502
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
-
     return jsonify({"item": entry, "changed": changed})
 
 
@@ -107,25 +98,55 @@ def sync_ucc():
     return jsonify(sync_ucc_sources())
 
 
+@app.post("/api/auth/register")
+def register():
+    payload = request.get_json(silent=True) or {}
+    email, password = str(payload.get("email", "")).strip(), str(payload.get("password", ""))
+    if len(password) < 8 or "@" not in email:
+        return jsonify({"error": "valid email and password of at least 8 characters are required"}), 400
+    try:
+        user = create_user(email, password, payload.get("institution"), payload.get("programme"), payload.get("level"))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 409
+    return jsonify({"id": user.id, "email": user.email}), 201
+
+
+@app.post("/api/auth/login")
+def login():
+    payload = request.get_json(silent=True) or {}
+    user = verify_user(str(payload.get("email", "")), str(payload.get("password", "")))
+    if not user:
+        return jsonify({"error": "invalid credentials"}), 401
+    return jsonify({"user": {"id": user.id, "email": user.email, "institution": user.institution, "programme": user.programme, "level": user.level}})
+
+
 @app.post("/api/ask")
 def ask():
     payload = request.get_json(silent=True) or {}
     question = str(payload.get("question", "")).strip()
-
+    session_id = str(payload.get("session_id", "default"))
     if not question:
         return jsonify({"error": "question is required"}), 400
+    _, matches = build_context(question, load_knowledge())
+    history = get_history(session_id)
+    result = generate_answer(question, matches, history=history, profile=payload.get("profile"))
+    add_message(session_id, "user", question)
+    add_message(session_id, "assistant", result["answer"])
+    return jsonify({"question": question, "answer": result["answer"], "provider": result["provider"], "model": result.get("model"), "sources": matches})
 
-    matches = search_knowledge(question, load_knowledge())
-    result = generate_answer(question, matches)
 
-    return jsonify({
-        "question": question,
-        "answer": result["answer"],
-        "provider": result["provider"],
-        "model": result.get("model"),
-        "sources": matches,
-    })
+@app.get("/api/admin/knowledge")
+@require_admin
+def admin_knowledge():
+    items = load_knowledge()
+    return jsonify({"count": len(items), "items": items})
+
+
+@app.get("/api/admin/sync")
+@require_admin
+def admin_sync():
+    return jsonify({"message": "Sync history API is available through the SyncRun database table."})
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=os.getenv("FLASK_DEBUG", "false").lower() == "true")
