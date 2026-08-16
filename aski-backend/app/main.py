@@ -17,6 +17,7 @@ from app.ucc_intelligence import classify_question
 from app.users import create_user, verify_user
 from app.web_ingestion import fetch_and_ingest
 from app.embeddings import embed_all_documents
+from app.backfill import backfill_embeddings
 from app.database import engine
 from sqlalchemy import text
 
@@ -184,7 +185,15 @@ def ask():
 def generate_embeddings():
     rows = engine.connect().execute(text("SELECT id, title, content FROM knowledge_documents ORDER BY id")).mappings().all()
     result = embed_all_documents(rows)
-    result["model"] = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+    result["model"] = os.getenv("OPENROUTER_EMBEDDING_MODEL", "nvidia/llama-nemotron-embed-vl-1b-v2:free")
+    return jsonify(result)
+
+
+@app.post("/api/admin/embeddings/backfill")
+@require_admin
+def backfill_embeddings_route():
+    result = backfill_embeddings()
+    result["model"] = os.getenv("OPENROUTER_EMBEDDING_MODEL", "nvidia/llama-nemotron-embed-vl-1b-v2:free")
     return jsonify(result)
 
 
