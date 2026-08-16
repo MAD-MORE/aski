@@ -5,6 +5,7 @@ from app.ai import generate_answer
 from app.ingestion import upsert_source
 from app.knowledge import load_knowledge
 from app.retrieval import search_knowledge
+from app.sync import sync_ucc_sources
 from app.web_ingestion import fetch_and_ingest
 
 app = Flask(__name__)
@@ -95,6 +96,11 @@ def ingest_ucc():
         return jsonify({"error": str(exc)}), 400
 
     return jsonify({"item": entry, "changed": changed})
+
+
+@app.post("/api/sync/ucc")
+def sync_ucc():
+    return jsonify(sync_ucc_sources())
 
 
 @app.post("/api/ask")
