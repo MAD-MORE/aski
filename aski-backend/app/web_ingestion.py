@@ -8,6 +8,9 @@ from app.ingestion import upsert_source
 ALLOWED_HOSTS = {
     "ucc.edu.gh",
     "www.ucc.edu.gh",
+    "news.ucc.edu.gh",
+    "academics.ucc.edu.gh",
+    "daa.ucc.edu.gh",
 }
 
 
