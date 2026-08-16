@@ -1,0 +1,24 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://aski:aski@db:5432/aski
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.6-luna}
+      ASKI_SYNC_API_TOKEN: ${ASKI_SYNC_API_TOKEN}
+      ASKI_ADMIN_TOKEN: ${ASKI_ADMIN_TOKEN}
+    depends_on:
+      - db
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: aski
+      POSTGRES_PASSWORD: aski
+      POSTGRES_DB: aski
+    volumes:
+      - aski_pgdata:/var/lib/postgresql/data
+
+volumes:
+  aski_pgdata:
