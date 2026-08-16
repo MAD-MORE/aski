@@ -1,4 +1,5 @@
 import os
+import re
 import time
 
 import requests
@@ -179,23 +180,42 @@ def login():
 def ask():
     payload = request.get_json(silent=True) or {}
     question = str(payload.get("question", "")).strip()
-    session_id = str(payload.get("session_id", "default"))
+    session_id = str(payload.get("session_id", "default")).strip()
     if not question:
         return jsonify({"error": "question is required"}), 400
     if len(question) > 2000:
         return jsonify({"error": "question is too long"}), 400
-    _, matches = build_context(question, load_knowledge())
-    history = get_history(session_id)
-    result = generate_answer(question, matches, history=history, profile=payload.get("profile"))
+    if len(session_id) > 128 or not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
+        return jsonify({"error": "session_id must contain only letters, numbers, hyphens, and underscores"}), 400
+
+    try:
+        _, matches = build_context(question, load_knowledge())
+        history = get_history(session_id)
+        result = generate_answer(question, matches, history=history, profile=payload.get("profile"))
+    except Exception as exc:
+        app.logger.exception("ASKI /api/ask failed")
+        return jsonify({"error": "ASKI could not process the request", "detail": str(exc)}), 502
+
+    source_payload = [
+        {
+            "title": m.get("title"),
+            "url": m.get("url"),
+            "relevance": m.get("relevance"),
+            "retrieval": m.get("retrieval"),
+            "freshness": m.get("freshness"),
+            "conflict_warning": m.get("conflict_warning"),
+        }
+        for m in matches
+    ]
     add_message(session_id, "user", question)
-    add_message(session_id, "assistant", result["answer"])
+    add_message(session_id, "assistant", result["answer"], sources=source_payload)
     return jsonify({
         "question": question,
         "intent": classify_question(question),
         "answer": result["answer"],
         "provider": result["provider"],
         "model": result.get("model"),
-        "sources": [{"title": m.get("title"), "url": m.get("url"), "relevance": m.get("relevance"), "retrieval": m.get("retrieval"), "freshness": m.get("freshness"), "conflict_warning": m.get("conflict_warning")} for m in matches],
+        "sources": source_payload,
     })
 
 
