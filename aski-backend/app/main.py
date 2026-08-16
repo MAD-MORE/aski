@@ -2,7 +2,7 @@ import os
 import time
 
 import requests
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, render_template
 
 from app.ai import generate_answer
 from app.auth import require_sync_token
@@ -20,7 +20,7 @@ from app.embeddings import embed_all_documents
 from app.database import engine
 from sqlalchemy import text
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="../templates")
 _rate = {}
 
 
@@ -49,6 +49,11 @@ def health_check():
 @app.get("/health")
 def detailed_health_check():
     return jsonify(system_health())
+
+
+@app.get("/test")
+def ai_test_page():
+    return render_template("test.html")
 
 
 @app.get("/admin")
@@ -145,6 +150,8 @@ def ask():
     session_id = str(payload.get("session_id", "default"))
     if not question:
         return jsonify({"error": "question is required"}), 400
+    if len(question) > 2000:
+        return jsonify({"error": "question is too long"}), 400
     _, matches = build_context(question, load_knowledge())
     history = get_history(session_id)
     result = generate_answer(question, matches, history=history, profile=payload.get("profile"))
