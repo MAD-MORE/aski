@@ -1,41 +1,48 @@
 from datetime import datetime, timezone
 
+from app.database import SessionLocal, init_db
+from app.models import Source, SyncRun
 from app.web_ingestion import fetch_and_ingest
 
-
-DEFAULT_UCC_SOURCES = [
-    {
-        "title": "UCC Homepage",
-        "url": "https://ucc.edu.gh/",
-    },
-]
+DEFAULT_UCC_SOURCES = [{"title": "UCC Homepage", "url": "https://ucc.edu.gh/"}]
 
 
 def sync_ucc_sources(sources=None):
     sources = sources or DEFAULT_UCC_SOURCES
+    init_db()
+    session = SessionLocal()
+    run = SyncRun(status="running")
+    session.add(run)
+    session.commit()
     results = []
-
-    for source in sources:
-        url = source["url"]
-        title = source.get("title")
-        try:
-            entry, changed = fetch_and_ingest(url, title)
-            results.append({
-                "url": url,
-                "changed": changed,
-                "status": "updated" if changed else "unchanged",
-                "item": entry,
-            })
-        except Exception as exc:
-            results.append({
-                "url": url,
-                "changed": False,
-                "status": "error",
-                "error": str(exc),
-            })
-
-    return {
-        "synced_at": datetime.now(timezone.utc).isoformat(),
-        "sources": len(sources),
-        "results": results,
-    }
+    changed_count = 0
+    try:
+        for source in sources:
+            url, title = source["url"], source.get("title")
+            try:
+                entry, changed = fetch_and_ingest(url, title)
+                changed_count += int(changed)
+                now = datetime.now(timezone.utc).replace(tzinfo=None)
+                db_source = session.query(Source).filter_by(url=url).first()
+                if not db_source:
+                    db_source = Source(name=title or url, url=url, source_type="official")
+                    session.add(db_source)
+                db_source.last_checked = now
+                if changed:
+                    db_source.last_changed = now
+                results.append({"url": url, "changed": changed, "status": "updated" if changed else "unchanged", "item": entry})
+            except Exception as exc:
+                results.append({"url": url, "changed": False, "status": "error", "error": str(exc)})
+        run.status = "completed" if all(r["status"] != "error" for r in results) else "partial"
+        run.sources_checked = len(sources)
+        run.documents_changed = changed_count
+        run.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        session.commit()
+    except Exception:
+        run.status = "failed"
+        run.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        session.commit()
+        raise
+    finally:
+        session.close()
+    return {"synced_at": datetime.now(timezone.utc).isoformat(), "sources": len(sources), "changed": changed_count, "results": results}
