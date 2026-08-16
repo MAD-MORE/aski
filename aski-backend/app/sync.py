@@ -4,7 +4,12 @@ from app.database import SessionLocal, init_db
 from app.models import Source, SyncRun
 from app.web_ingestion import fetch_and_ingest
 
-DEFAULT_UCC_SOURCES = [{"title": "UCC Homepage", "url": "https://ucc.edu.gh/"}]
+DEFAULT_UCC_SOURCES = [
+    {"title": "UCC Homepage", "url": "https://ucc.edu.gh/"},
+    {"title": "UCC News", "url": "https://news.ucc.edu.gh/"},
+    {"title": "UCC Academic Calendar", "url": "https://academics.ucc.edu.gh/academic-calendar"},
+    {"title": "UCC Directorate of Academic Affairs Calendar", "url": "https://daa.ucc.edu.gh/academic-calendar-20252026-academic-year"},
+]
 
 
 def sync_ucc_sources(sources=None):
