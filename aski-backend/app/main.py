@@ -3,6 +3,7 @@ import time
 
 import requests
 from flask import Flask, jsonify, request, send_from_directory, render_template
+from sqlalchemy import text
 
 from app.ai import generate_answer
 from app.auth import require_sync_token
@@ -12,14 +13,13 @@ from app.knowledge import load_knowledge
 from app.memory import add_message, get_history
 from app.rag import build_context
 from app.security import require_admin
-from app.sync import sync_ucc_sources
+from app.sync import sync_ucc_sources, get_sync_history, get_source_health
 from app.ucc_intelligence import classify_question
 from app.users import create_user, verify_user
 from app.web_ingestion import fetch_and_ingest
 from app.embeddings import embed_all_documents
 from app.backfill import backfill_embeddings
 from app.database import engine
-from sqlalchemy import text
 
 app = Flask(__name__, template_folder="../templates")
 _rate = {}
@@ -177,7 +177,42 @@ def ask():
     result = generate_answer(question, matches, history=history, profile=payload.get("profile"))
     add_message(session_id, "user", question)
     add_message(session_id, "assistant", result["answer"])
-    return jsonify({"question": question, "intent": classify_question(question), "answer": result["answer"], "provider": result["provider"], "model": result.get("model"), "sources": [{"title": m.get("title"), "url": m.get("url"), "relevance": m.get("relevance"), "retrieval": m.get("retrieval")} for m in matches]})
+    return jsonify({
+        "question": question,
+        "intent": classify_question(question),
+        "answer": result["answer"],
+        "provider": result["provider"],
+        "model": result.get("model"),
+        "sources": [{"title": m.get("title"), "url": m.get("url"), "relevance": m.get("relevance"), "retrieval": m.get("retrieval"), "freshness": m.get("freshness"), "conflict_warning": m.get("conflict_warning")} for m in matches],
+    })
+
+
+@app.get("/api/rag/status")
+def rag_status():
+    return jsonify(system_health())
+
+
+@app.get("/api/sources/health")
+@require_admin
+def sources_health():
+    return jsonify({"sources": get_source_health()})
+
+
+@app.get("/api/admin/sync/history")
+@require_admin
+def sync_history():
+    return jsonify({"runs": get_sync_history()})
+
+
+@app.get("/api/admin/knowledge/versions")
+@require_admin
+def knowledge_versions():
+    with engine.begin() as conn:
+        rows = conn.execute(text("""
+            SELECT id, document_id, title, content_hash, source, url, captured_at
+            FROM source_versions ORDER BY captured_at DESC LIMIT 100
+        """)).mappings().all()
+    return jsonify({"versions": [dict(r) for r in rows]})
 
 
 @app.post("/api/admin/embeddings")
@@ -207,7 +242,7 @@ def admin_knowledge():
 @app.get("/api/admin/sync")
 @require_admin
 def admin_sync():
-    return jsonify({"message": "Sync history is stored in the SyncRun table."})
+    return jsonify({"message": "Sync history is available at /api/admin/sync/history"})
 
 
 if __name__ == "__main__":
