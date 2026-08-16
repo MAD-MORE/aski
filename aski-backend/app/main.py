@@ -51,9 +51,28 @@ def detailed_health_check():
     return jsonify(system_health())
 
 
-@app.get("/test")
+@app.route("/test", methods=["GET", "POST"])
 def ai_test_page():
-    return render_template("test.html")
+    answer = None
+    sources = []
+    error = None
+    question = ""
+    if request.method == "POST":
+        question = str(request.form.get("question", "")).strip()
+        if not question:
+            error = "Please enter a question."
+        elif len(question) > 2000:
+            error = "Question is too long."
+        else:
+            try:
+                _, matches = build_context(question, load_knowledge())
+                result = generate_answer(question, matches, history=[], profile=None)
+                answer = result["answer"]
+                sources = matches
+            except Exception as exc:
+                app.logger.exception("AI test failed")
+                error = f"ASKI error: {exc}"
+    return render_template("test.html", question=question, answer=answer, sources=sources, error=error)
 
 
 @app.get("/admin")
