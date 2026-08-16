@@ -1,6 +1,8 @@
 import type { AnswerMode, Message, Source } from '../components/chat/types'
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'https://aski-theta.vercel.app').replace(/\/$/, '')
+// Keep API traffic same-origin in production. Vercel rewrites /api/* to the ASKI backend,
+// which removes browser CORS/preflight failures and keeps the backend URL out of the client bundle.
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 
 export interface AskResponse {
   question: string
