@@ -17,7 +17,6 @@ def _client():
 
 
 def init_vector_store():
-    # Vector schema is managed by Supabase migrations in production.
     return engine.dialect.name == "postgresql"
 
 
@@ -29,13 +28,16 @@ def embed_text(text_value):
     return response.data[0].embedding
 
 
+def _vector_literal(vector):
+    return "[" + ",".join(str(float(x)) for x in vector) + "]"
+
+
 def upsert_embedding(document_id, title, content):
     if not init_vector_store():
         return False
     vector = embed_text(f"{title}\n{content}")
     if vector is None:
         return False
-    vector_sql = "[" + ",".join(str(x) for x in vector) + "]"
     with engine.begin() as conn:
         conn.execute(text("""
             INSERT INTO knowledge_embeddings (document_id, embedding, model, updated_at)
@@ -44,8 +46,23 @@ def upsert_embedding(document_id, title, content):
                 embedding = EXCLUDED.embedding,
                 model = EXCLUDED.model,
                 updated_at = CURRENT_TIMESTAMP
-        """), {"id": document_id, "embedding": vector_sql, "model": EMBEDDING_MODEL})
+        """), {"id": document_id, "embedding": _vector_literal(vector), "model": EMBEDDING_MODEL})
     return True
+
+
+def embed_all_documents(documents):
+    """Generate/update embeddings for documents missing an embedding."""
+    results = {"processed": 0, "embedded": 0, "failed": 0}
+    for document in documents:
+        results["processed"] += 1
+        try:
+            if upsert_embedding(document["id"], document["title"], document["content"]):
+                results["embedded"] += 1
+            else:
+                results["failed"] += 1
+        except Exception:
+            results["failed"] += 1
+    return results
 
 
 def semantic_search(question, limit=5):
@@ -54,7 +71,6 @@ def semantic_search(question, limit=5):
     vector = embed_text(question)
     if vector is None:
         return []
-    vector_sql = "[" + ",".join(str(x) for x in vector) + "]"
     with engine.begin() as conn:
         rows = conn.execute(text("""
             SELECT d.id, d.title, d.content, d.source, d.url, d.content_hash,
@@ -63,5 +79,5 @@ def semantic_search(question, limit=5):
             JOIN knowledge_documents d ON d.id = e.document_id
             ORDER BY e.embedding <=> CAST(:embedding AS vector)
             LIMIT :limit
-        """), {"embedding": vector_sql, "limit": limit}).mappings().all()
+        """), {"embedding": _vector_literal(vector), "limit": limit}).mappings().all()
     return [dict(row) for row in rows]
