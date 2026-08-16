@@ -27,7 +27,10 @@ _rate = {}
 
 
 def allowed_origins():
-    configured = os.getenv("ASKI_ALLOWED_ORIGINS", "https://aski-theta.vercel.app,https://aski.vercel.app")
+    configured = os.getenv(
+        "ASKI_ALLOWED_ORIGINS",
+        "https://aski-theta.vercel.app,https://aski.vercel.app,https://aski-frontend-git-main-padmoreyeboah123-1582s-projects.vercel.app",
+    )
     return {origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()}
 
 
@@ -181,12 +184,15 @@ def ask():
     payload = request.get_json(silent=True) or {}
     question = str(payload.get("question", "")).strip()
     session_id = str(payload.get("session_id", "default")).strip()
+    mode = str(payload.get("mode", "detailed")).strip().lower()
     if not question:
         return jsonify({"error": "question is required"}), 400
     if len(question) > 2000:
         return jsonify({"error": "question is too long"}), 400
     if len(session_id) > 128 or not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
         return jsonify({"error": "session_id must contain only letters, numbers, hyphens, and underscores"}), 400
+    if mode not in {"quick", "detailed", "sources"}:
+        mode = "detailed"
 
     try:
         _, matches = build_context(question, load_knowledge())
@@ -204,78 +210,27 @@ def ask():
             "retrieval": m.get("retrieval"),
             "freshness": m.get("freshness"),
             "conflict_warning": m.get("conflict_warning"),
+            "official": m.get("official", True),
         }
         for m in matches
     ]
+    answer = result["answer"]
+    if mode == "sources":
+        answer = "Here are the official UCC sources relevant to your question."
+    elif mode == "quick":
+        answer = answer.split("\n\n", 1)[0].strip()
+
     add_message(session_id, "user", question)
-    add_message(session_id, "assistant", result["answer"], sources=source_payload)
+    add_message(session_id, "assistant", answer, sources=source_payload)
     return jsonify({
         "question": question,
         "intent": classify_question(question),
-        "answer": result["answer"],
+        "answer": answer,
         "provider": result["provider"],
         "model": result.get("model"),
+        "confidence": result.get("confidence"),
+        "last_verified": result.get("last_verified"),
+        "conflict_summary": result.get("conflict_summary"),
+        "follow_ups": result.get("follow_ups", []),
         "sources": source_payload,
     })
-
-
-@app.get("/api/rag/status")
-def rag_status():
-    return jsonify(system_health())
-
-
-@app.get("/api/sources/health")
-@require_admin
-def sources_health():
-    return jsonify({"sources": get_source_health()})
-
-
-@app.get("/api/admin/sync/history")
-@require_admin
-def sync_history():
-    return jsonify({"runs": get_sync_history()})
-
-
-@app.get("/api/admin/knowledge/versions")
-@require_admin
-def knowledge_versions():
-    with engine.begin() as conn:
-        rows = conn.execute(text("""
-            SELECT id, document_id, title, content_hash, source, url, captured_at
-            FROM source_versions ORDER BY captured_at DESC LIMIT 100
-        """)).mappings().all()
-    return jsonify({"versions": [dict(r) for r in rows]})
-
-
-@app.post("/api/admin/embeddings")
-@require_admin
-def generate_embeddings():
-    rows = engine.connect().execute(text("SELECT id, title, content FROM knowledge_documents ORDER BY id")).mappings().all()
-    result = embed_all_documents(rows)
-    result["model"] = os.getenv("OPENROUTER_EMBEDDING_MODEL", "nvidia/llama-nemotron-embed-vl-1b-v2:free")
-    return jsonify(result)
-
-
-@app.post("/api/admin/embeddings/backfill")
-@require_admin
-def backfill_embeddings_route():
-    result = backfill_embeddings()
-    result["model"] = os.getenv("OPENROUTER_EMBEDDING_MODEL", "nvidia/llama-nemotron-embed-vl-1b-v2:free")
-    return jsonify(result)
-
-
-@app.get("/api/admin/knowledge")
-@require_admin
-def admin_knowledge():
-    items = load_knowledge()
-    return jsonify({"count": len(items), "items": items})
-
-
-@app.get("/api/admin/sync")
-@require_admin
-def admin_sync():
-    return jsonify({"message": "Sync history is available at /api/admin/sync/history"})
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=os.getenv("FLASK_DEBUG", "false").lower() == "true")
