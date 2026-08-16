@@ -2,6 +2,7 @@ import hashlib
 from datetime import datetime, timezone
 
 from app.database import SessionLocal, init_db
+from app.embeddings import upsert_embedding
 from app.models import KnowledgeDocument
 
 
@@ -31,14 +32,22 @@ def upsert_source(title, content, source, url=None):
             entry.content_hash = content_hash
             entry.updated_at = now
             session.commit()
-            return _serialize(entry), True
-        entry = KnowledgeDocument(title=title, content=content, source=source, url=url, content_hash=content_hash)
-        session.add(entry)
-        session.commit()
-        session.refresh(entry)
-        return _serialize(entry), True
+            result = _serialize(entry)
+        else:
+            entry = KnowledgeDocument(title=title, content=content, source=source, url=url, content_hash=content_hash)
+            session.add(entry)
+            session.commit()
+            session.refresh(entry)
+            result = _serialize(entry)
     finally:
         session.close()
+
+    try:
+        upsert_embedding(result["id"], result["title"], result["content"])
+    except Exception:
+        # Knowledge ingestion must remain usable if embeddings are unavailable.
+        pass
+    return result, True
 
 
 def _serialize(row):
