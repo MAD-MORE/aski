@@ -1,224 +1,100 @@
 import { SUGGESTED_QUESTIONS } from './mockData'
-import { DESIGN_SYSTEM } from './theme'
+import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import AskiMark from './AskiMark'
 
 interface WelcomeScreenProps {
   onQuestion: (q: string) => void
 }
 
+const CAPABILITIES = [
+  { label: 'Admissions', variant: 'default' as const },
+  { label: 'Scholarships', variant: 'accent' as const },
+  { label: 'Courses', variant: 'default' as const },
+  { label: 'Aggregate Calc', variant: 'accent' as const },
+  { label: 'Rankings', variant: 'default' as const },
+  { label: 'Careers', variant: 'accent' as const },
+]
+
 export default function WelcomeScreen({ onQuestion }: WelcomeScreenProps) {
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flex: 1,
-      padding: `${DESIGN_SYSTEM.spacing.lg}px ${DESIGN_SYSTEM.spacing.lg}px`,
-      minHeight: '100%',
-      background: DESIGN_SYSTEM.colors.background,
-    }}>
-      {/* Main Container */}
-      <div style={{
-        width: '100%',
-        maxWidth: 680,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: DESIGN_SYSTEM.spacing.lg,
-      }}>
-        {/* Hero Avatar Section */}
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: DESIGN_SYSTEM.spacing.lg,
-          marginBottom: DESIGN_SYSTEM.spacing.sm,
-        }}>
+    <div className="flex min-h-full flex-1 flex-col items-center justify-center bg-background px-6 py-6">
+      <div className="flex w-full max-w-[680px] flex-col items-center gap-6">
+        {/* Hero */}
+        <div className="mb-2 flex flex-col items-center gap-6">
           {/* Avatar — the Aski seal, given one deliberate on-mount
               flourish (a "stamp" settle) instead of a looping pulse
               ring. Respects prefers-reduced-motion. */}
-          <div className="hero-mark" style={{
-            width: 88,
-            height: 88,
-            borderRadius: DESIGN_SYSTEM.radius.lg,
-            background: `linear-gradient(135deg, ${DESIGN_SYSTEM.colors.primary}, ${DESIGN_SYSTEM.colors.accent})`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: `0 12px 40px ${DESIGN_SYSTEM.colors.primary}30`,
-            position: 'relative',
-          }}>
+          <div
+            className="hero-mark flex h-[88px] w-[88px] items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-[0_12px_40px_rgba(22,35,63,0.22)]"
+          >
             <AskiMark size={44} variant="white" />
-            <style>{`
-              .hero-mark { animation: aski-stamp 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
-              @keyframes aski-stamp {
-                0% { transform: scale(1.3) rotate(-8deg); opacity: 0; }
-                60% { transform: scale(0.94) rotate(2deg); opacity: 1; }
-                100% { transform: scale(1) rotate(0deg); opacity: 1; }
-              }
-              @media (prefers-reduced-motion: reduce) {
-                .hero-mark { animation: none; }
-              }
-            `}</style>
           </div>
+          <style>{`
+            .hero-mark { animation: aski-stamp 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+            @keyframes aski-stamp {
+              0% { transform: scale(1.3) rotate(-8deg); opacity: 0; }
+              60% { transform: scale(0.94) rotate(2deg); opacity: 1; }
+              100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .hero-mark { animation: none; }
+            }
+          `}</style>
 
-          {/* Headline & Description */}
-          <div style={{
-            textAlign: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: DESIGN_SYSTEM.spacing.md,
-          }}>
-            <h1 style={{
-              ...DESIGN_SYSTEM.typography.headingLarge,
-              fontFamily: 'DM Serif Display, Georgia, serif',
-              fontWeight: 400,
-              fontSize: 'clamp(28px, 7vw, 40px)',
-              lineHeight: 1.2,
-              letterSpacing: '-0.01em',
-              color: DESIGN_SYSTEM.colors.text,
-              margin: 0,
-            }}>
-              Hello, I'm <em style={{ color: DESIGN_SYSTEM.colors.accent, fontStyle: 'italic' }}>Aski AI</em>
+          <div className="flex flex-col gap-4 text-center">
+            <h1 className="font-display text-[clamp(28px,7vw,40px)] font-normal leading-tight tracking-tight text-foreground">
+              Hello, I'm <em className="text-accent-ink italic">Aski AI</em>
             </h1>
-
-            <p style={{
-              ...DESIGN_SYSTEM.typography.body,
-              fontSize: 16,
-              color: DESIGN_SYSTEM.colors.textSecondary,
-              margin: 0,
-              lineHeight: 1.6,
-              maxWidth: 520,
-            }}>
+            <p className="mx-auto max-w-[520px] font-sans text-base leading-relaxed text-muted-foreground">
               Your AI assistant for education decisions, school info, admissions, courses, and more. Ask anything!
             </p>
           </div>
         </div>
 
-        {/* Capability Pills */}
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: DESIGN_SYSTEM.spacing.sm,
-          justifyContent: 'center',
-          width: '100%',
-          marginBottom: DESIGN_SYSTEM.spacing.md,
-        }}>
-          {[
-            { label: 'Admissions', color: DESIGN_SYSTEM.colors.primary },
-            { label: 'Scholarships', color: DESIGN_SYSTEM.colors.accent },
-            { label: 'Courses', color: DESIGN_SYSTEM.colors.primary },
-            { label: 'Aggregate Calc', color: DESIGN_SYSTEM.colors.accent },
-            { label: 'Rankings', color: DESIGN_SYSTEM.colors.primary },
-            { label: 'Careers', color: DESIGN_SYSTEM.colors.accent },
-          ].map(pill => (
-            <span
+        {/* Capability pills */}
+        <div className="mb-2 flex w-full flex-wrap justify-center gap-2">
+          {CAPABILITIES.map(pill => (
+            <Badge
               key={pill.label}
-              style={{
-                ...DESIGN_SYSTEM.typography.caption,
-                color: pill.color,
-                background: `${pill.color}12`,
-                padding: `${DESIGN_SYSTEM.spacing.xs}px ${DESIGN_SYSTEM.spacing.md}px`,
-                borderRadius: 100,
-                border: `1.5px solid ${pill.color}28`,
-                transition: `all ${DESIGN_SYSTEM.transitions.fast}`,
-                cursor: 'default',
-                whiteSpace: 'nowrap',
-                fontSize: 12,
-              }}
+              variant={pill.variant}
+              className={cn(
+                'cursor-default font-sans text-xs font-semibold',
+                pill.variant === 'default' && 'bg-primary/10 text-primary border-primary/20',
+                pill.variant === 'accent' && 'bg-accent/15 text-accent-foreground border-accent/35'
+              )}
             >
               {pill.label}
-            </span>
+            </Badge>
           ))}
         </div>
 
-        {/* Divider */}
-        <div style={{
-          width: '100%',
-          height: 1,
-          background: `${DESIGN_SYSTEM.colors.textTertiary}20`,
-          margin: `${DESIGN_SYSTEM.spacing.md}px 0`,
-        }} />
+        <Separator className="my-2" />
 
-        {/* Suggested Questions Section */}
-        <div style={{ width: '100%' }}>
-          <div style={{
-            ...DESIGN_SYSTEM.typography.caption,
-            color: DESIGN_SYSTEM.colors.textTertiary,
-            textAlign: 'center',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            marginBottom: DESIGN_SYSTEM.spacing.lg,
-            fontSize: 11,
-            fontWeight: 600,
-          }}>
+        {/* Suggested questions */}
+        <div className="w-full">
+          <div className="mb-6 text-center font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             Try asking about:
           </div>
 
-          {/* Suggested Questions Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-            gap: DESIGN_SYSTEM.spacing.md,
-            width: '100%',
-          }}>
+          <div className="grid w-full grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4">
             {SUGGESTED_QUESTIONS.map((q, i) => (
               <button
                 key={i}
                 onClick={() => onQuestion(q.text)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  gap: DESIGN_SYSTEM.spacing.sm,
-                  background: DESIGN_SYSTEM.colors.surface,
-                  border: `1.5px solid ${DESIGN_SYSTEM.colors.border}`,
-                  borderRadius: DESIGN_SYSTEM.radius.md,
-                  padding: DESIGN_SYSTEM.spacing.md,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: `all ${DESIGN_SYSTEM.transitions.normal} cubic-bezier(0.16, 1, 0.3, 1)`,
-                  fontFamily: 'Outfit, sans-serif',
-                  width: '100%',
-                  minHeight: '110px',
-                  justifyContent: 'space-between',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = '#ffffff'
-                  e.currentTarget.style.borderColor = DESIGN_SYSTEM.colors.primary
-                  e.currentTarget.style.boxShadow = DESIGN_SYSTEM.shadows.hover
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = DESIGN_SYSTEM.colors.surface
-                  e.currentTarget.style.borderColor = DESIGN_SYSTEM.colors.border
-                  e.currentTarget.style.boxShadow = 'none'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                }}
+                className={cn(
+                  'group flex min-h-[110px] w-full flex-col items-start justify-between gap-3 rounded-xl border border-border',
+                  'bg-secondary p-4 text-left font-sans transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                  'hover:-translate-y-0.5 hover:border-primary hover:bg-background hover:shadow-[0_8px_24px_rgba(22,35,63,0.15)]'
+                )}
               >
-                <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>
-                  {q.icon}
-                </span>
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    ...DESIGN_SYSTEM.typography.caption,
-                    color: DESIGN_SYSTEM.colors.textTertiary,
-                    marginBottom: DESIGN_SYSTEM.spacing.xs,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    fontSize: 10,
-                  }}>
+                <span className="text-2xl leading-none">{q.icon}</span>
+                <div className="flex-1">
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {q.category}
                   </div>
-                  <div style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: DESIGN_SYSTEM.colors.text,
-                    lineHeight: 1.4,
-                  }}>
-                    {q.text}
-                  </div>
+                  <div className="text-[13px] font-medium leading-snug text-foreground">{q.text}</div>
                 </div>
               </button>
             ))}

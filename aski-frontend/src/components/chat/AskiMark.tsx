@@ -32,8 +32,8 @@ export default function AskiMark({ size = 24, variant = 'gradient' }: AskiMarkPr
       {variant === 'gradient' && (
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#0B6B4F" />
-            <stop offset="100%" stopColor="#D9A62E" />
+            <stop offset="0%" stopColor="#16233F" />
+            <stop offset="100%" stopColor="#F2B705" />
           </linearGradient>
         </defs>
       )}
