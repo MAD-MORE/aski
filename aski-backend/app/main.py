@@ -1,7 +1,8 @@
 from flask import Flask, jsonify, request
 
 from app.ai import generate_answer
-from app.knowledge import load_knowledge, save_knowledge
+from app.ingestion import upsert_source
+from app.knowledge import load_knowledge
 from app.retrieval import search_knowledge
 
 app = Flask(__name__)
@@ -28,20 +29,52 @@ def add_knowledge():
     title = str(payload.get("title", "")).strip()
     content = str(payload.get("content", "")).strip()
     source = str(payload.get("source", "manual")).strip() or "manual"
+    url = payload.get("url")
 
     if not title or not content:
         return jsonify({"error": "title and content are required"}), 400
 
-    entries = load_knowledge()
-    entry = {
-        "id": len(entries) + 1,
-        "title": title,
-        "content": content,
-        "source": source,
-    }
-    entries.append(entry)
-    save_knowledge(entries)
-    return jsonify(entry), 201
+    try:
+        entry, changed = upsert_source(title, content, source, url)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    return jsonify({"item": entry, "changed": changed}), 200 if not changed else 201
+
+
+@app.post("/api/ingest")
+def ingest():
+    payload = request.get_json(silent=True) or {}
+    items = payload.get("items")
+
+    if not isinstance(items, list) or not items:
+        return jsonify({"error": "items must be a non-empty list"}), 400
+
+    results = []
+    changed_count = 0
+
+    for item in items:
+        if not isinstance(item, dict):
+            return jsonify({"error": "each item must be an object"}), 400
+
+        try:
+            entry, changed = upsert_source(
+                item.get("title", ""),
+                item.get("content", ""),
+                item.get("source", "manual"),
+                item.get("url"),
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+
+        changed_count += int(changed)
+        results.append(entry)
+
+    return jsonify({
+        "processed": len(results),
+        "changed": changed_count,
+        "items": results,
+    })
 
 
 @app.post("/api/ask")
