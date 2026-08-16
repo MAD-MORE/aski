@@ -1,5 +1,5 @@
 import os
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import quote, urlparse, urlunparse
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
@@ -16,18 +16,18 @@ parsed = urlparse(DATABASE_URL)
 
 if parsed.scheme in ("postgres", "postgresql"):
     host = parsed.hostname or ""
-    username = parsed.username
-    port = parsed.port
 
     # Direct Supabase DB host: db.<project-ref>.supabase.co
     if host.startswith("db.") and host.endswith(".supabase.co"):
         project_ref = host[3:-len(".supabase.co")]
         pooler_host = "aws-0-eu-north-1.pooler.supabase.com"
         pooler_user = f"postgres.{project_ref}"
-        # Session-mode pooler uses 5432 and avoids IPv6-only direct access.
+        password = quote(parsed.password or "", safe="")
+        userinfo = f"{quote(pooler_user, safe='')}:{password}"
+
         parsed = parsed._replace(
             scheme="postgresql+psycopg",
-            netloc=f"{pooler_user}:{parsed.password}@{pooler_host}:5432",
+            netloc=f"{userinfo}@{pooler_host}:5432",
         )
         DATABASE_URL = urlunparse(parsed)
     elif parsed.scheme == "postgres":
@@ -35,8 +35,8 @@ if parsed.scheme in ("postgres", "postgresql"):
     elif parsed.scheme == "postgresql":
         DATABASE_URL = urlunparse(parsed._replace(scheme="postgresql+psycopg"))
 
-# Supabase pooler connections should not be held by SQLAlchemy between
-# serverless invocations. Let each invocation acquire/release its connection.
+# Production schema is managed by Supabase. SQLAlchemy only manages runtime
+# connections; it must never create or alter the production schema at startup.
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
@@ -51,6 +51,4 @@ class Base(DeclarativeBase):
 
 
 def init_db():
-    # Production schema is managed by Supabase migrations.
-    # Do not create tables from application startup.
     return None
