@@ -17,23 +17,8 @@ def _client():
 
 
 def init_vector_store():
-    if engine.dialect.name != "postgresql":
-        return False
-    with engine.begin() as conn:
-        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS knowledge_embeddings (
-                document_id INTEGER PRIMARY KEY REFERENCES knowledge_documents(id) ON DELETE CASCADE,
-                embedding vector(1536) NOT NULL,
-                model VARCHAR(100) NOT NULL,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        """))
-        conn.execute(text("""
-            CREATE INDEX IF NOT EXISTS knowledge_embeddings_hnsw
-            ON knowledge_embeddings USING hnsw (embedding vector_cosine_ops)
-        """))
-    return True
+    # Vector schema is managed by Supabase migrations in production.
+    return engine.dialect.name == "postgresql"
 
 
 def embed_text(text_value):
@@ -64,9 +49,8 @@ def upsert_embedding(document_id, title, content):
 
 
 def semantic_search(question, limit=5):
-    if engine.dialect.name != "postgresql":
+    if not init_vector_store():
         return []
-    init_vector_store()
     vector = embed_text(question)
     if vector is None:
         return []
