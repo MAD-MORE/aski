@@ -1,7 +1,9 @@
 import hashlib
 from datetime import datetime, timezone
 
-from app.database import SessionLocal, init_db
+from sqlalchemy import text
+
+from app.database import SessionLocal, engine, init_db
 from app.embeddings import upsert_embedding
 from app.models import KnowledgeDocument
 
@@ -9,6 +11,16 @@ from app.models import KnowledgeDocument
 def _content_hash(title, content):
     raw = f"{title}\n{content}".encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
+
+
+def _embedding_exists(document_id):
+    if engine.dialect.name != "postgresql":
+        return False
+    with engine.begin() as conn:
+        return conn.execute(
+            text("SELECT 1 FROM knowledge_embeddings WHERE document_id = :id LIMIT 1"),
+            {"id": document_id},
+        ).first() is not None
 
 
 def upsert_source(title, content, source, url=None):
@@ -25,7 +37,15 @@ def upsert_source(title, content, source, url=None):
     try:
         entry = session.query(KnowledgeDocument).filter_by(source=source, title=title).first()
         if entry and entry.content_hash == content_hash:
-            return _serialize(entry), False
+            result = _serialize(entry)
+            # If an existing document predates embeddings, repair it automatically.
+            needs_embedding = not _embedding_exists(entry.id)
+            if needs_embedding:
+                try:
+                    upsert_embedding(result["id"], result["title"], result["content"])
+                except Exception:
+                    pass
+            return result, False
         if entry:
             entry.content = content
             entry.url = url
