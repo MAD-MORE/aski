@@ -19,14 +19,37 @@ def lexical_search(question, documents, limit=5):
         if score > 0:
             scored.append((score, doc))
     scored.sort(key=lambda x: x[0], reverse=True)
-    return [{**doc, "relevance": round(score, 4)} for score, doc in scored[:limit]]
+    return [{**doc, "relevance": round(score, 4), "retrieval": "keyword"} for score, doc in scored[:limit]]
 
 
 def semantic_search(question, documents=None, limit=5):
+    documents = documents or []
+    semantic = []
     try:
-        results = vector_search(question, limit=limit)
-        if results:
-            return results
+        semantic = vector_search(question, limit=limit * 2)
     except Exception:
-        pass
-    return lexical_search(question, documents or [], limit=limit)
+        semantic = []
+
+    lexical = lexical_search(question, documents, limit=limit * 2)
+    merged = {}
+
+    # Reciprocal-rank fusion keeps semantic matches useful even when wording differs,
+    # while keyword overlap protects exact terms such as dates, programme names and codes.
+    for rank, item in enumerate(semantic, 1):
+        key = item.get("id") or item.get("url") or item.get("title")
+        merged.setdefault(key, {**item, "_rrf": 0.0})
+        merged[key]["_rrf"] += 1.0 / (60 + rank)
+        merged[key]["retrieval"] = "hybrid"
+
+    for rank, item in enumerate(lexical, 1):
+        key = item.get("id") or item.get("url") or item.get("title")
+        merged.setdefault(key, {**item, "_rrf": 0.0})
+        merged[key]["_rrf"] += 1.0 / (60 + rank)
+        merged[key]["retrieval"] = "hybrid"
+
+    results = list(merged.values())
+    results.sort(key=lambda item: item["_rrf"], reverse=True)
+    for item in results:
+        item["relevance"] = round(item["_rrf"], 6)
+        item.pop("_rrf", None)
+    return results[:limit]

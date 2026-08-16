@@ -16,6 +16,9 @@ from app.sync import sync_ucc_sources
 from app.ucc_intelligence import classify_question
 from app.users import create_user, verify_user
 from app.web_ingestion import fetch_and_ingest
+from app.embeddings import embed_all_documents
+from app.database import engine
+from sqlalchemy import text
 
 app = Flask(__name__)
 _rate = {}
@@ -138,7 +141,16 @@ def ask():
     result = generate_answer(question, matches, history=history, profile=payload.get("profile"))
     add_message(session_id, "user", question)
     add_message(session_id, "assistant", result["answer"])
-    return jsonify({"question": question, "intent": classify_question(question), "answer": result["answer"], "provider": result["provider"], "model": result.get("model"), "sources": matches})
+    return jsonify({"question": question, "intent": classify_question(question), "answer": result["answer"], "provider": result["provider"], "model": result.get("model"), "sources": [{"title": m.get("title"), "url": m.get("url"), "relevance": m.get("relevance"), "retrieval": m.get("retrieval")} for m in matches]})
+
+
+@app.post("/api/admin/embeddings")
+@require_admin
+def generate_embeddings():
+    rows = engine.connect().execute(text("SELECT id, title, content FROM knowledge_documents ORDER BY id")).mappings().all()
+    result = embed_all_documents(rows)
+    result["model"] = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+    return jsonify(result)
 
 
 @app.get("/api/admin/knowledge")
