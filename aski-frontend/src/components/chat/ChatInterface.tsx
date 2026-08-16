@@ -14,12 +14,7 @@ function genId() {
   return crypto.randomUUID()
 }
 
-const QUICK_PROMPTS = [
-  'Academic calendar',
-  'Registration',
-  'Courses',
-  'Fees',
-]
+const QUICK_PROMPTS = ['Academic calendar', 'Registration', 'Courses', 'Fees']
 
 export default function ChatInterface({ onBack }: ChatInterfaceProps) {
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -29,7 +24,7 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const activeConvo = conversations.find(c => c.id === activeId)
+  const activeConvo = conversations.find(item => item.id === activeId)
   const hasMessages = messages.length > 0
 
   useEffect(() => {
@@ -54,22 +49,9 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
     const question = text.trim()
     if (!question || isLoading) return
 
-    const userMsg: Message = {
-      id: genId(),
-      role: 'user',
-      content: question,
-      status: 'sent',
-      timestamp: new Date(),
-    }
-    const loadingMsg: Message = {
-      id: genId(),
-      role: 'ai',
-      content: '',
-      status: 'loading',
-      timestamp: new Date(),
-    }
-    const pending = [...messages, userMsg, loadingMsg]
-    setMessages(pending)
+    const userMsg: Message = { id: genId(), role: 'user', content: question, status: 'sent', timestamp: new Date() }
+    const loadingMsg: Message = { id: genId(), role: 'ai', content: '', status: 'loading', timestamp: new Date() }
+    setMessages([...messages, userMsg, loadingMsg])
     setIsLoading(true)
 
     try {
@@ -132,14 +114,8 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
       <main className="aski-main">
         <header className="aski-header">
           <div className="aski-header-left">
-            <button
-              className="mobile-menu-btn"
-              onClick={() => setSidebarOpen(value => !value)}
-              aria-label="Open conversation menu"
-            >
-              <span />
-              <span />
-              <span />
+            <button className="mobile-menu-btn" onClick={() => setSidebarOpen(value => !value)} aria-label="Open conversation menu">
+              <span /><span /><span />
             </button>
             <div>
               <div className="aski-title">{activeConvo?.title || 'New Chat'}</div>
@@ -158,9 +134,7 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
               <WelcomeScreen onQuestion={sendMessage} />
               <div className="quick-prompts">
                 {QUICK_PROMPTS.map(prompt => (
-                  <button key={prompt} onClick={() => sendMessage(`Tell me about ${prompt.toLowerCase()} at UCC`)}>
-                    {prompt}
-                  </button>
+                  <button key={prompt} onClick={() => sendMessage(`Tell me about ${prompt.toLowerCase()} at UCC`)}>{prompt}</button>
                 ))}
               </div>
             </div>
@@ -173,8 +147,7 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
         </section>
 
         <div className="input-wrap">
-          <MessageInput onSend={sendMessage} disabled={isLoading} designSystem={undefined} />
-          <div className="input-note">ASKI answers from verified UCC knowledge and shows its sources.</div>
+          <MessageInput onSend={sendMessage} disabled={isLoading} />
         </div>
       </main>
     </div>
