@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, request
 
+from app.ai import generate_answer
 from app.knowledge import load_knowledge, save_knowledge
+from app.retrieval import search_knowledge
 
 app = Flask(__name__)
 
@@ -16,7 +18,8 @@ def health_check():
 
 @app.get("/api/knowledge")
 def get_knowledge():
-    return jsonify({"count": len(load_knowledge()), "items": load_knowledge()})
+    entries = load_knowledge()
+    return jsonify({"count": len(entries), "items": entries})
 
 
 @app.post("/api/knowledge")
@@ -27,9 +30,7 @@ def add_knowledge():
     source = str(payload.get("source", "manual")).strip() or "manual"
 
     if not title or not content:
-        return jsonify({
-            "error": "title and content are required"
-        }), 400
+        return jsonify({"error": "title and content are required"}), 400
 
     entries = load_knowledge()
     entry = {
@@ -40,8 +41,27 @@ def add_knowledge():
     }
     entries.append(entry)
     save_knowledge(entries)
-
     return jsonify(entry), 201
+
+
+@app.post("/api/ask")
+def ask():
+    payload = request.get_json(silent=True) or {}
+    question = str(payload.get("question", "")).strip()
+
+    if not question:
+        return jsonify({"error": "question is required"}), 400
+
+    matches = search_knowledge(question, load_knowledge())
+    result = generate_answer(question, matches)
+
+    return jsonify({
+        "question": question,
+        "answer": result["answer"],
+        "provider": result["provider"],
+        "model": result.get("model"),
+        "sources": matches,
+    })
 
 
 if __name__ == "__main__":
