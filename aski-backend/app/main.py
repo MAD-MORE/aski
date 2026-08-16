@@ -25,21 +25,33 @@ app = Flask(__name__, template_folder="../templates")
 _rate = {}
 
 
-def rate_limit():
+def allowed_origins():
+    configured = os.getenv("ASKI_ALLOWED_ORIGINS", "https://aski-theta.vercel.app,https://aski.vercel.app")
+    return {origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()}
+
+
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get("Origin", "").rstrip("/")
+    if origin in allowed_origins():
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = "Origin"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    return response
+
+
+@app.before_request
+def handle_options_and_rate_limit():
+    if request.method == "OPTIONS":
+        return ("", 204)
     key = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
     now = time.time()
     window = _rate.setdefault(key, [])
     window[:] = [t for t in window if now - t < 60]
     if len(window) >= int(os.getenv("ASKI_RATE_LIMIT", "60")):
-        return False
-    window.append(now)
-    return True
-
-
-@app.before_request
-def protect_requests():
-    if not rate_limit():
         return jsonify({"error": "rate limit exceeded"}), 429
+    window.append(now)
 
 
 @app.get("/")
