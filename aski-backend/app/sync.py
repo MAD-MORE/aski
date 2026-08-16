@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 
-from app.database import SessionLocal, init_db
+from sqlalchemy import text
+
+from app.database import SessionLocal, engine, init_db
 from app.models import Source, SyncRun
 from app.web_ingestion import fetch_and_ingest
 from app.knowledge import load_knowledge
@@ -21,8 +23,7 @@ def sync_ucc_sources(sources=None):
     run = SyncRun(status="running")
     session.add(run)
     session.commit()
-    results = []
-    changed_count = 0
+    results, changed_count = [], 0
     try:
         for source in sources:
             url, title = source["url"], source.get("title")
@@ -41,8 +42,6 @@ def sync_ucc_sources(sources=None):
             except Exception as exc:
                 results.append({"url": url, "changed": False, "status": "error", "error": str(exc)})
 
-        # Always backfill missing/stale embeddings after synchronization.
-        # This also repairs an initially empty vector store even when the source pages did not change.
         all_documents = load_knowledge()
         embedding_result = embed_all_documents(all_documents) if all_documents else {"processed": 0, "embedded": 0, "failed": 0}
 
@@ -58,6 +57,7 @@ def sync_ucc_sources(sources=None):
         raise
     finally:
         session.close()
+
     return {
         "synced_at": datetime.now(timezone.utc).isoformat(),
         "sources": len(sources),
@@ -65,3 +65,22 @@ def sync_ucc_sources(sources=None):
         "embeddings": embedding_result,
         "results": results,
     }
+
+
+def get_sync_history(limit=20):
+    with engine.begin() as conn:
+        rows = conn.execute(text("""
+            SELECT id, started_at, completed_at, status, sources_checked, documents_changed
+            FROM sync_runs ORDER BY started_at DESC LIMIT :limit
+        """), {"limit": limit}).mappings().all()
+    return [dict(r) for r in rows]
+
+
+def get_source_health():
+    with engine.begin() as conn:
+        rows = conn.execute(text("""
+            SELECT url, title, status, http_status, response_ms, last_checked,
+                   last_changed, last_error, consecutive_failures
+            FROM source_health ORDER BY title NULLS LAST, url
+        """)).mappings().all()
+    return [dict(r) for r in rows]
