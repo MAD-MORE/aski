@@ -107,6 +107,15 @@ def sync_ucc():
     return jsonify(sync_ucc_sources())
 
 
+@app.get("/api/cron/ucc-sync")
+def cron_ucc_sync():
+    expected = os.getenv("CRON_SECRET")
+    provided = request.headers.get("Authorization", "")
+    if not expected or provided != f"Bearer {expected}":
+        return jsonify({"error": "unauthorized"}), 401
+    return jsonify(sync_ucc_sources())
+
+
 @app.post("/api/auth/register")
 def register():
     payload = request.get_json(silent=True) or {}
