@@ -5,6 +5,10 @@ export interface Source {
   title: string
   institution: string
   url?: string
+  relevance?: number
+  retrieval?: string
+  freshness?: string
+  conflictWarning?: string
 }
 
 export interface Message {
@@ -15,6 +19,7 @@ export interface Message {
   sources?: Source[]
   confidence?: number
   timestamp: Date
+  provider?: string
 }
 
 export interface Conversation {
