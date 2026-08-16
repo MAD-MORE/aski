@@ -4,20 +4,33 @@ import requests
 
 
 def _build_prompt(question, context, history=None, profile=None):
-    context_text = "\n\n".join(
-        f"[{item.get('title', 'Untitled')}]\n{item.get('content', '')}\nSOURCE_URL: {item.get('url') or 'N/A'}"
-        for item in context
-    ) or "No matching verified knowledge was found."
+    blocks = []
+    warnings = []
+    for item in context:
+        freshness = item.get("freshness") or {}
+        checked = freshness.get("last_checked") or freshness.get("updated_at") or "unknown"
+        block = (
+            f"[{item.get('title', 'Untitled')}]\n{item.get('content', '')}\n"
+            f"SOURCE_TITLE: {item.get('title', 'Untitled')}\n"
+            f"SOURCE_VERIFIED: {item.get('source_verified', False)}\n"
+            f"LAST_VERIFIED: {checked}"
+        )
+        blocks.append(block)
+        if item.get("conflict_warning"):
+            warnings.append(item["conflict_warning"])
+    context_text = "\n\n".join(blocks) or "No matching verified knowledge was found."
+    warning_text = "\n".join(sorted(set(warnings))) or "No source conflict was detected."
     history_text = "\n".join(f"{m['role']}: {m['content']}" for m in (history or [])[-8:])
     return (
         "You are ASKI, a university information assistant. Answer using only verified context. "
         "If the context is insufficient, explicitly say you do not have enough verified information. "
         "Never invent institutional dates, fees, rules, requirements, or policies. "
         "Preserve the exact meaning of dates: reporting, registration, lecture, examination, deadline, etc. "
-        "IMPORTANT: Do not output, rewrite, guess, or manufacture URLs. The application supplies authoritative "
-        "source URLs separately from the database. Refer to a source by its title if needed.\n\n"
+        "If official sources conflict, explain the conflict and identify which source states which date; never silently merge them. "
+        "Do not call a fresh-student reporting date a universal reopening date unless the source explicitly says so. "
+        "Do not output, rewrite, guess, or manufacture URLs. The application supplies authoritative source URLs separately.\n\n"
         f"STUDENT PROFILE: {str(profile or {})}\n\nCONVERSATION:\n{history_text}\n\n"
-        f"VERIFIED CONTEXT:\n{context_text}\n\nQUESTION: {question}"
+        f"SOURCE CONFLICT CHECK:\n{warning_text}\n\nVERIFIED CONTEXT:\n{context_text}\n\nQUESTION: {question}"
     )
 
 
