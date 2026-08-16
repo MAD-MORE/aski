@@ -1,7 +1,8 @@
 import hashlib
 from datetime import datetime, timezone
 
-from app.knowledge import load_knowledge, save_knowledge
+from app.database import SessionLocal, init_db
+from app.models import KnowledgeDocument
 
 
 def _content_hash(title, content):
@@ -13,38 +14,37 @@ def upsert_source(title, content, source, url=None):
     title = str(title).strip()
     content = str(content).strip()
     source = str(source or "manual").strip() or "manual"
-
     if not title or not content:
         raise ValueError("title and content are required")
 
-    entries = load_knowledge()
+    init_db()
+    session = SessionLocal()
     content_hash = _content_hash(title, content)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    try:
+        entry = session.query(KnowledgeDocument).filter_by(source=source, title=title).first()
+        if entry and entry.content_hash == content_hash:
+            return _serialize(entry), False
+        if entry:
+            entry.content = content
+            entry.url = url
+            entry.content_hash = content_hash
+            entry.updated_at = now
+            session.commit()
+            return _serialize(entry), True
+        entry = KnowledgeDocument(title=title, content=content, source=source, url=url, content_hash=content_hash)
+        session.add(entry)
+        session.commit()
+        session.refresh(entry)
+        return _serialize(entry), True
+    finally:
+        session.close()
 
-    for entry in entries:
-        if entry.get("source") == source and entry.get("title") == title:
-            if entry.get("content_hash") == content_hash:
-                return entry, False
 
-            entry.update({
-                "content": content,
-                "url": url,
-                "content_hash": content_hash,
-                "updated_at": now,
-            })
-            save_knowledge(entries)
-            return entry, True
-
-    entry = {
-        "id": max((item.get("id", 0) for item in entries), default=0) + 1,
-        "title": title,
-        "content": content,
-        "source": source,
-        "url": url,
-        "content_hash": content_hash,
-        "created_at": now,
-        "updated_at": now,
+def _serialize(row):
+    return {
+        "id": row.id, "title": row.title, "content": row.content,
+        "source": row.source, "url": row.url, "content_hash": row.content_hash,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
     }
-    entries.append(entry)
-    save_knowledge(entries)
-    return entry, True
