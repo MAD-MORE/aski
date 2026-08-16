@@ -2,7 +2,7 @@ import os
 import time
 
 import requests
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 
 from app.ai import generate_answer
 from app.auth import require_sync_token
@@ -13,6 +13,7 @@ from app.memory import add_message, get_history
 from app.rag import build_context
 from app.security import require_admin
 from app.sync import sync_ucc_sources
+from app.ucc_intelligence import classify_question
 from app.users import create_user, verify_user
 from app.web_ingestion import fetch_and_ingest
 
@@ -47,10 +48,15 @@ def detailed_health_check():
     return jsonify(system_health())
 
 
+@app.get("/admin")
+def admin_dashboard():
+    return send_from_directory(os.path.join(os.path.dirname(os.path.dirname(__file__)), "admin"), "index.html")
+
+
 @app.get("/api/knowledge")
 def get_knowledge():
-    entries = load_knowledge()
-    return jsonify({"count": len(entries), "items": entries})
+    items = load_knowledge()
+    return jsonify({"count": len(items), "items": items})
 
 
 @app.post("/api/knowledge")
@@ -132,7 +138,7 @@ def ask():
     result = generate_answer(question, matches, history=history, profile=payload.get("profile"))
     add_message(session_id, "user", question)
     add_message(session_id, "assistant", result["answer"])
-    return jsonify({"question": question, "answer": result["answer"], "provider": result["provider"], "model": result.get("model"), "sources": matches})
+    return jsonify({"question": question, "intent": classify_question(question), "answer": result["answer"], "provider": result["provider"], "model": result.get("model"), "sources": matches})
 
 
 @app.get("/api/admin/knowledge")
@@ -145,7 +151,7 @@ def admin_knowledge():
 @app.get("/api/admin/sync")
 @require_admin
 def admin_sync():
-    return jsonify({"message": "Sync history API is available through the SyncRun database table."})
+    return jsonify({"message": "Sync history is stored in the SyncRun table."})
 
 
 if __name__ == "__main__":
