@@ -18,7 +18,9 @@ export interface AskResponse {
   }>
 }
 
-function toSource(source: AskResponse['sources'][number]): Source {
+type ApiSource = NonNullable<AskResponse['sources']>[number]
+
+function toSource(source: ApiSource): Source {
   return {
     title: source.title || 'UCC source',
     institution: 'University of Cape Coast',
@@ -31,13 +33,12 @@ function toSource(source: AskResponse['sources'][number]): Source {
 }
 
 export async function askAski(question: string, history: Message[] = []): Promise<AskResponse> {
-  const sessionId = getSessionId()
   const response = await fetch(`${API_BASE}/api/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       question,
-      session_id: sessionId,
+      session_id: getSessionId(),
       history: history.slice(-8).map(message => ({ role: message.role, content: message.content })),
     }),
   })
@@ -56,12 +57,10 @@ export async function askAski(question: string, history: Message[] = []): Promis
     throw new Error(message)
   }
 
-  const result = payload as AskResponse
-  result.sources = (result.sources || []).map(source => source)
-  return result
+  return payload as AskResponse
 }
 
-export function mapSources(sources: AskResponse['sources'] = []): Source[] {
+export function mapSources(sources: ApiSource[] = []): Source[] {
   return sources.map(toSource)
 }
 
