@@ -1,6 +1,6 @@
 import type { AnswerMode, Message, Source } from '../components/chat/types'
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'https://aski-o7hl0rij6-padmoreyeboah123-1582s-projects.vercel.app').replace(/\/$/, '')
+const API_BASE = (import.meta.env.VITE_API_URL || 'https://aski-theta.vercel.app').replace(/\/$/, '')
 
 export interface AskResponse {
   question: string
