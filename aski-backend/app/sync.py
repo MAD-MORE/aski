@@ -23,7 +23,6 @@ def sync_ucc_sources(sources=None):
     session.commit()
     results = []
     changed_count = 0
-    changed_documents = []
     try:
         for source in sources:
             url, title = source["url"], source.get("title")
@@ -38,14 +37,14 @@ def sync_ucc_sources(sources=None):
                 db_source.last_checked = now
                 if changed:
                     db_source.last_changed = now
-                    changed_documents.append(entry)
                 results.append({"url": url, "changed": changed, "status": "updated" if changed else "unchanged", "item": entry})
             except Exception as exc:
                 results.append({"url": url, "changed": False, "status": "error", "error": str(exc)})
 
-        embedding_result = {"processed": 0, "embedded": 0, "failed": 0}
-        if changed_documents:
-            embedding_result = embed_all_documents(changed_documents)
+        # Always backfill missing/stale embeddings after synchronization.
+        # This also repairs an initially empty vector store even when the source pages did not change.
+        all_documents = load_knowledge()
+        embedding_result = embed_all_documents(all_documents) if all_documents else {"processed": 0, "embedded": 0, "failed": 0}
 
         run.status = "completed" if all(r["status"] != "error" for r in results) else "partial"
         run.sources_checked = len(sources)
