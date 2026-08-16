@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse, urlunparse
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
@@ -8,15 +9,40 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL must be configured for ASKI")
 
-# Supabase commonly provides a PostgreSQL URL without an explicit driver.
-# SQLAlchemy otherwise falls back to psycopg2, while ASKI ships psycopg (v3).
-# Normalize the URL so the installed psycopg v3 driver is always selected.
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgres://"):]
-elif DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgresql://"):]
+# ASKI runs on Vercel, where Supabase's direct database hostname can resolve
+# to IPv6. Vercel's Python runtime may not have usable IPv6 connectivity, so
+# transparently route Supabase direct URLs through the IPv4-compatible pooler.
+parsed = urlparse(DATABASE_URL)
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
+if parsed.scheme in ("postgres", "postgresql"):
+    host = parsed.hostname or ""
+    username = parsed.username
+    port = parsed.port
+
+    # Direct Supabase DB host: db.<project-ref>.supabase.co
+    if host.startswith("db.") and host.endswith(".supabase.co"):
+        project_ref = host[3:-len(".supabase.co")]
+        pooler_host = "aws-0-eu-north-1.pooler.supabase.com"
+        pooler_user = f"postgres.{project_ref}"
+        # Session-mode pooler uses 5432 and avoids IPv6-only direct access.
+        parsed = parsed._replace(
+            scheme="postgresql+psycopg",
+            netloc=f"{pooler_user}:{parsed.password}@{pooler_host}:5432",
+        )
+        DATABASE_URL = urlunparse(parsed)
+    elif parsed.scheme == "postgres":
+        DATABASE_URL = urlunparse(parsed._replace(scheme="postgresql+psycopg"))
+    elif parsed.scheme == "postgresql":
+        DATABASE_URL = urlunparse(parsed._replace(scheme="postgresql+psycopg"))
+
+# Supabase pooler connections should not be held by SQLAlchemy between
+# serverless invocations. Let each invocation acquire/release its connection.
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=300,
+    future=True,
+)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 
