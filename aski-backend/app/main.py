@@ -29,7 +29,7 @@ _rate = {}
 def allowed_origins():
     configured = os.getenv(
         "ASKI_ALLOWED_ORIGINS",
-        "https://aski-theta.vercel.app,https://aski.vercel.app,https://aski-frontend-git-main-padmoreyeboah123-1582s-projects.vercel.app",
+        "https://aski-theta.vercel.app,https://aski.vercel.app,https://aski-frontend.vercel.app,https://aski-frontend-padmoreyeboah123-1582s-projects.vercel.app,https://aski-frontend-git-main-padmoreyeboah123-1582s-projects.vercel.app",
     )
     return {origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()}
 
