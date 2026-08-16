@@ -3,6 +3,7 @@ import requests
 
 from app.ai import generate_answer
 from app.auth import require_sync_token
+from app.health import system_health
 from app.ingestion import upsert_source
 from app.knowledge import load_knowledge
 from app.retrieval import search_knowledge
@@ -14,11 +15,12 @@ app = Flask(__name__)
 
 @app.get("/")
 def health_check():
-    return jsonify({
-        "name": "ASKI Backend",
-        "status": "ok",
-        "message": "ASKI backend is running"
-    })
+    return jsonify(system_health())
+
+
+@app.get("/health")
+def detailed_health_check():
+    return jsonify(system_health())
 
 
 @app.get("/api/knowledge")
