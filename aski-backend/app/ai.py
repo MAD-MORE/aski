@@ -3,12 +3,21 @@ import requests
 
 
 def _build_prompt(question, context, history=None, profile=None):
-    context_text = "\n\n".join(f"[{item.get('title', 'Untitled')}]\n{item.get('content', '')}\nURL: {item.get('url') or 'N/A'}" for item in context) or "No matching verified knowledge was found."
+    context_text = "\n\n".join(
+        f"[{item.get('title', 'Untitled')}]\n{item.get('content', '')}\nURL: {item.get('url') or 'N/A'}"
+        for item in context
+    ) or "No matching verified knowledge was found."
     history_text = "\n".join(f"{m['role']}: {m['content']}" for m in (history or [])[-8:])
-    return ("You are ASKI, a university information assistant. Answer using only verified context. "
-            "If the context is insufficient, explicitly say you do not have enough verified information. "
-            "Never invent institutional dates, fees, rules, requirements, or policies. Cite source URLs inline when useful.\n\n"
-            f"STUDENT PROFILE: {str(profile or {})}\n\nCONVERSATION:\n{history_text}\n\nVERIFIED CONTEXT:\n{context_text}\n\nQUESTION: {question}")
+    return (
+        "You are ASKI, a university information assistant. Answer using only verified context. "
+        "If the context is insufficient, explicitly say you do not have enough verified information. "
+        "Never invent institutional dates, fees, rules, requirements, or policies. "
+        "When a source supports a factual claim, include its URL. "
+        "If a date is specifically a reporting, registration, lecture, examination, or deadline date, "
+        "preserve that meaning instead of silently calling it a general school reopening date.\n\n"
+        f"STUDENT PROFILE: {str(profile or {})}\n\nCONVERSATION:\n{history_text}\n\n"
+        f"VERIFIED CONTEXT:\n{context_text}\n\nQUESTION: {question}"
+    )
 
 
 def _openrouter_answer(prompt):
@@ -16,11 +25,27 @@ def _openrouter_answer(prompt):
     if not key:
         return None
     model = os.getenv("OPENROUTER_MODEL", "openrouter/free")
-    response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers={
-        "Authorization": f"Bearer {key}", "Content-Type": "application/json",
-        "HTTP-Referer": os.getenv("ASKI_SITE_URL", "https://aski.vercel.app"), "X-Title": "ASKI",
-    }, json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2}, timeout=45)
-    response.raise_for_status()
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": os.getenv("ASKI_SITE_URL", "https://aski-theta.vercel.app"),
+            "X-Title": "ASKI",
+        },
+        json={
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.2,
+        },
+        timeout=60,
+    )
+    if not response.ok:
+        try:
+            detail = response.json()
+        except Exception:
+            detail = response.text[:500]
+        raise RuntimeError(f"AI provider returned HTTP {response.status_code}: {detail}")
     data = response.json()
     text = data.get("choices", [{}])[0].get("message", {}).get("content")
     if not text:
@@ -37,15 +62,22 @@ def _openai_answer(prompt):
 
 def generate_answer(question, context, history=None, profile=None):
     prompt = _build_prompt(question, context, history, profile)
-    if os.getenv("OPENAI_API_KEY"):
-        try:
-            return _openai_answer(prompt)
-        except Exception:
-            pass
+
+    # ASKI's primary provider is the free OpenRouter route. This avoids consuming
+    # paid OpenAI quota while keeping an optional OpenAI fallback for deployments
+    # that explicitly configure it.
     try:
         result = _openrouter_answer(prompt)
         if result:
             return result
-    except Exception as exc:
-        return {"answer": f"AI provider error: {exc}", "provider": "openrouter"}
+    except Exception as openrouter_exc:
+        if not os.getenv("OPENAI_API_KEY"):
+            return {"answer": f"AI provider error: {openrouter_exc}", "provider": "openrouter"}
+
+    if os.getenv("OPENAI_API_KEY"):
+        try:
+            return _openai_answer(prompt)
+        except Exception as exc:
+            return {"answer": f"AI provider error: {exc}", "provider": "openai"}
+
     return {"answer": "No AI provider is configured. Add OPENROUTER_API_KEY to use ASKI's free AI provider.", "provider": "not_configured"}
