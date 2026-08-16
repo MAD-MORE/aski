@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 import requests
 
 from app.ai import generate_answer
+from app.auth import require_sync_token
 from app.ingestion import upsert_source
 from app.knowledge import load_knowledge
 from app.retrieval import search_knowledge
@@ -99,6 +100,7 @@ def ingest_ucc():
 
 
 @app.post("/api/sync/ucc")
+@require_sync_token
 def sync_ucc():
     return jsonify(sync_ucc_sources())
 
