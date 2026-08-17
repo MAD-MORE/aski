@@ -1,11 +1,22 @@
+"""UCC-specific intent routing used to improve retrieval and follow-ups."""
+
 UCC_INTENTS = {
-    "admissions": ["admission", "apply", "application", "requirements"],
-    "registration": ["register", "registration", "course registration", "late registration"],
-    "fees": ["fees", "fee", "payment", "school fees"],
-    "academic_calendar": ["calendar", "semester", "academic year", "dates"],
-    "programmes": ["programme", "program", "course", "department"],
-    "halls": ["hall", "accommodation", "residence", "hostel"],
-    "notices": ["notice", "announcement", "circular"],
+    "admissions": ["admission", "apply", "application", "requirements", "applicant", "wASSCE", "wassce", "mature", "cut off", "cut-off"],
+    "registration": ["register", "registration", "course registration", "late registration", "add and drop", "adding and dropping", "dreos"],
+    "fees": ["fees", "fee", "payment", "school fees", "charges", "cost", "tuition"],
+    "academic_calendar": ["calendar", "semester", "academic year", "dates", "lecture", "examination", "exam", "results", "resit", "supplementary"],
+    "programmes": ["programme", "program", "course", "department", "degree", "diploma", "certificate", "bachelor", "master", "mphil", "phd", "doctorate"],
+    "colleges_and_schools": ["college", "faculty", "school", "unit", "department", "dean", "hod", "head of department"],
+    "accommodation": ["hall", "halls", "accommodation", "residence", "hostel", "room", "bed space", "hall week"],
+    "student_life": ["src", "jcr", "student life", "club", "society", "sports", "recreation", "event", "week", "orientation", "matriculation"],
+    "library": ["library", "sam jonah", "journal", "e-resource", "research database", "borrowing", "book"],
+    "academic_support": ["academic advisor", "academic counselling", "counselling", "study", "learning support", "academic support"],
+    "graduate_studies": ["graduate", "postgraduate", "masters", "master's", "mphil", "phd", "thesis", "dissertation", "supervisor", "sgs"],
+    "distance_education": ["distance", "code", "college of distance education", "coDE"],
+    "international": ["international", "exchange", "foreign", "visa", "study abroad", "international relations"],
+    "health_and_welfare": ["health", "clinic", "medical", "welfare", "disability", "counselling", "mental health"],
+    "notices": ["notice", "announcement", "circular", "news", "update", "latest"],
+    "contacts_and_directory": ["contact", "phone", "email", "address", "office", "staff", "director", "registrar"],
 }
 
 

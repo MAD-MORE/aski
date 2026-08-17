@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Message } from './types'
 
 interface MessageBubbleProps {
@@ -5,9 +6,11 @@ interface MessageBubbleProps {
 }
 
 export default function MessageBubble({ message }: MessageBubbleProps) {
+  const [showSources, setShowSources] = useState(false)
   const isUser = message.role === 'user'
   const isLoading = message.status === 'loading'
   const isError = message.status === 'error'
+  const sources = message.sources || []
 
   if (isUser) {
     return (
@@ -20,7 +23,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div className={`message-row ai-row ${isError ? 'error-row' : ''}`}>
       <div className="ai-message">
-        <div className="ai-label"><span className="ai-dot" /> ASKI {isError ? '· Error' : '· Verified answer'}</div>
+        <div className="ai-label"><span className="ai-dot" /> ASKI{isError ? ' · Error' : ''}</div>
         {isLoading ? (
           <div className="typing-indicator" aria-label="ASKI is thinking">
             <span /><span /><span />
@@ -28,20 +31,31 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         ) : (
           <>
             <div className="ai-content">{message.content}</div>
-            {message.sources && message.sources.length > 0 && (
-              <div className="source-stack">
-                <div className="source-heading">Sources</div>
-                {message.sources.map((source, index) => (
-                  <a className="source-card" key={`${source.url || source.title}-${index}`} href={source.url} target="_blank" rel="noreferrer">
-                    <div className="source-icon">✓</div>
-                    <div className="source-copy">
-                      <div className="source-title">{source.title}</div>
-                      <div className="source-meta">{source.institution}{source.freshness ? ` · ${source.freshness}` : ''}</div>
-                      {source.conflictWarning && <div className="source-warning">{source.conflictWarning}</div>}
-                    </div>
-                    <div className="source-arrow">↗</div>
-                  </a>
-                ))}
+            {sources.length > 0 && (
+              <div className="sources-control">
+                <button
+                  type="button"
+                  className="sources-toggle"
+                  onClick={() => setShowSources(value => !value)}
+                  aria-expanded={showSources}
+                >
+                  {showSources ? 'Hide sources' : `Sources · ${sources.length}`}
+                </button>
+                {showSources && (
+                  <div className="source-stack">
+                    {sources.map((source, index) => (
+                      <a className="source-card" key={`${source.url || source.title}-${index}`} href={source.url} target="_blank" rel="noreferrer">
+                        <div className="source-icon">✓</div>
+                        <div className="source-copy">
+                          <div className="source-title">{source.title}</div>
+                          <div className="source-meta">{source.institution}{source.freshness ? ` · ${source.freshness}` : ''}</div>
+                          {source.conflictWarning && <div className="source-warning">{source.conflictWarning}</div>}
+                        </div>
+                        <div className="source-arrow">↗</div>
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </>
