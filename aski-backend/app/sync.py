@@ -8,11 +8,28 @@ from app.web_ingestion import fetch_and_ingest
 from app.knowledge import load_knowledge
 from app.embeddings import embed_all_documents
 
+# Official UCC information is split across the university, admissions,
+# academic-affairs, graduate-studies, directory and service sites. Keeping the
+# registry explicit makes freshness auditable and prevents accidental ingestion
+# of third-party pages as institutional truth.
 DEFAULT_UCC_SOURCES = [
     {"title": "UCC Homepage", "url": "https://ucc.edu.gh/"},
     {"title": "UCC News", "url": "https://news.ucc.edu.gh/"},
+    {"title": "UCC Admissions", "url": "https://admissions.ucc.edu.gh/"},
+    {"title": "UCC Undergraduate Programmes", "url": "https://admissions.ucc.edu.gh/programmes/undergraduate"},
+    {"title": "UCC Academic Programmes Catalogue", "url": "https://admissions.ucc.edu.gh/catalogue"},
+    {"title": "UCC Departments", "url": "https://admissions.ucc.edu.gh/catalogue/departments"},
+    {"title": "UCC Admission Announcements", "url": "https://ucc.edu.gh/announcements?type=admission"},
     {"title": "UCC Academic Calendar", "url": "https://academics.ucc.edu.gh/academic-calendar"},
-    {"title": "UCC Directorate of Academic Affairs Calendar", "url": "https://daa.ucc.edu.gh/academic-calendar-20252026-academic-year"},
+    {"title": "UCC Directorate of Academic Affairs", "url": "https://daa.ucc.edu.gh/"},
+    {"title": "UCC DAA Academic Calendar", "url": "https://daa.ucc.edu.gh/academic-calendar-20252026-academic-year"},
+    {"title": "UCC School of Graduate Studies Calendar", "url": "https://sgs.ucc.edu.gh/sgs-academic-calendar-20252026"},
+    {"title": "UCC Library", "url": "https://ucc.edu.gh/main/explore-ucc/corporate-strategic-plan/library"},
+    {"title": "UCC Academic Counselling", "url": "https://ucc.edu.gh/main/applicants-and-students/academic-counselling"},
+    {"title": "UCC Recreational and Social Activities", "url": "https://ucc.edu.gh/main/explore-ucc/recreational-and-social-activities"},
+    {"title": "UCC Faculties and Schools", "url": "https://archive.ucc.edu.gh/academics/faculties-schools"},
+    {"title": "UCC Staff Directory", "url": "https://directory.ucc.edu.gh/"},
+    {"title": "UCC Counselling Centre Directory", "url": "https://directory.ucc.edu.gh/d/counselling-centre"},
 ]
 
 
