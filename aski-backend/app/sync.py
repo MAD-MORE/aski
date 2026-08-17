@@ -8,18 +8,24 @@ from app.web_ingestion import crawl_and_ingest, fetch_and_ingest
 from app.knowledge import load_knowledge
 from app.embeddings import embed_all_documents
 
+# Canonical UCC source registry. These are deliberately official UCC domains;
+# the crawler is same-host and bounded, while individual high-value pages are
+# fetched directly so important records are never dependent on link discovery.
 DEFAULT_UCC_SOURCES = [
     {"title": "UCC Homepage", "url": "https://ucc.edu.gh/", "crawl": True},
     {"title": "UCC News", "url": "https://news.ucc.edu.gh/", "crawl": True},
     {"title": "UCC Admissions", "url": "https://admissions.ucc.edu.gh/", "crawl": True},
-    {"title": "UCC Undergraduate Programmes", "url": "https://admissions.ucc.edu.gh/programmes/undergraduate"},
+    {"title": "UCC Application Portal", "url": "https://apply.ucc.edu.gh/"},
+    {"title": "UCC How to Apply", "url": "https://admissions.ucc.edu.gh/how-to-apply"},
     {"title": "UCC Academic Programmes Catalogue", "url": "https://admissions.ucc.edu.gh/catalogue"},
+    {"title": "UCC Programmes Catalogue — Accepting", "url": "https://admissions.ucc.edu.gh/catalogue?accepting=1"},
     {"title": "UCC Departments", "url": "https://admissions.ucc.edu.gh/catalogue/departments"},
     {"title": "UCC Admission Announcements", "url": "https://ucc.edu.gh/announcements?type=admission"},
     {"title": "UCC Academic Calendar", "url": "https://academics.ucc.edu.gh/academic-calendar"},
+    {"title": "UCC All Academic Calendars", "url": "https://academics.ucc.edu.gh/academic-calendar/all"},
     {"title": "UCC Directorate of Academic Affairs", "url": "https://daa.ucc.edu.gh/", "crawl": True},
-    {"title": "UCC DAA Academic Calendar", "url": "https://daa.ucc.edu.gh/academic-calendar-20252026-academic-year"},
-    {"title": "UCC School of Graduate Studies Calendar", "url": "https://sgs.ucc.edu.gh/sgs-academic-calendar-20252026", "crawl": True},
+    {"title": "UCC School of Graduate Studies", "url": "https://sgs.ucc.edu.gh/", "crawl": True},
+    {"title": "UCC School of Graduate Studies Calendar", "url": "https://sgs.ucc.edu.gh/sgs-academic-calendar-20252026"},
     {"title": "UCC Library", "url": "https://ucc.edu.gh/main/explore-ucc/corporate-strategic-plan/library"},
     {"title": "UCC Academic Counselling", "url": "https://ucc.edu.gh/main/applicants-and-students/academic-counselling"},
     {"title": "UCC Recreational and Social Activities", "url": "https://ucc.edu.gh/main/explore-ucc/recreational-and-social-activities"},
@@ -102,5 +108,5 @@ def get_source_health():
             SELECT url, title, status, http_status, response_ms, last_checked,
                    last_changed, last_error, consecutive_failures
             FROM source_health ORDER BY title NULLS LAST, url
-        """)).mappings().all()
+        """).mappings().all()
     return [dict(r) for r in rows]
