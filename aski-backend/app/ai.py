@@ -3,9 +3,9 @@ import re
 import time
 import requests
 
-# Short-lived circuit breakers prevent an exhausted provider (especially a free
-# tier returning 429) from being hammered on every request. This is intentionally
-# process-local; each server instance protects itself without storing secrets.
+# Short-lived circuit breakers prevent an exhausted provider from being hammered
+# on every request. This is intentionally process-local; each server instance
+# protects itself without storing secrets.
 _PROVIDER_COOLDOWN_UNTIL = {}
 
 
@@ -55,7 +55,6 @@ def _source_fallback(question, context):
 
 
 def _cooldown(provider, response):
-    # Respect provider retry hints when available; otherwise use a safe default.
     retry_after = response.headers.get("Retry-After")
     try:
         seconds = max(30, min(int(float(retry_after)), 3600)) if retry_after else 300
@@ -96,24 +95,31 @@ def _gemini_answer(prompt):
     return {"answer": _clean_answer(text), "provider": "gemini", "model": model}
 
 
-def _groq_answer(prompt):
-    key = os.getenv("GROQ_API_KEY")
+def _grok_answer(prompt):
+    # xAI's API is the Grok provider. Keep the ASKI provider name as `grok`
+    # while using the documented XAI_API_KEY environment variable internally.
+    key = os.getenv("XAI_API_KEY") or os.getenv("GROK_API_KEY")
     if not key:
         return None
-    model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+    model = os.getenv("GROK_MODEL", "grok-4.5")
     response = requests.post(
-        "https://api.groq.com/openai/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2},
-        timeout=45,
+        json={
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.2,
+            "stream": False,
+        },
+        timeout=60,
     )
     if not response.ok:
-        raise _provider_error("Groq", response)
+        raise _provider_error("Grok", response)
     data = response.json()
     text = data.get("choices", [{}])[0].get("message", {}).get("content")
     if not text:
-        raise RuntimeError("Groq returned no answer")
-    return {"answer": _clean_answer(text), "provider": "groq", "model": model}
+        raise RuntimeError("Grok returned no answer")
+    return {"answer": _clean_answer(text), "provider": "grok", "model": data.get("model") or model}
 
 
 def _openrouter_answer(prompt):
@@ -123,7 +129,12 @@ def _openrouter_answer(prompt):
     model = os.getenv("OPENROUTER_MODEL", "openrouter/free")
     response = requests.post(
         "https://openrouter.ai/api/v1/chat/completions",
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json", "HTTP-Referer": os.getenv("ASKI_SITE_URL", "https://aski-theta.vercel.app"), "X-Title": "ASKI"},
+        headers={
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": os.getenv("ASKI_SITE_URL", "https://aski-theta.vercel.app"),
+            "X-Title": "ASKI",
+        },
         json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2},
         timeout=45,
     )
@@ -136,26 +147,35 @@ def _openrouter_answer(prompt):
     return {"answer": _clean_answer(text), "provider": "openrouter", "model": data.get("model") or model}
 
 
-def _openai_answer(prompt):
-    from openai import OpenAI
-    model = os.getenv("OPENAI_MODEL", "gpt-5.6-luna")
-    response = OpenAI(api_key=os.getenv("OPENAI_API_KEY")).responses.create(model=model, input=prompt)
-    return {"answer": _clean_answer(response.output_text), "provider": "openai", "model": model}
-
-
 def generate_answer(question, context, history=None, profile=None):
     prompt = _build_prompt(question, context, history, profile)
 
-    # Free-first, resilient failover. Exhausted providers are temporarily
-    # skipped instead of receiving another request on every user message.
+    # Provider names are deliberately stable inside ASKI. `grok` maps to the
+    # xAI API, so the public configuration stays Gemini -> Grok -> OpenRouter.
     provider_map = {
         "gemini": _gemini_answer,
-        "groq": _groq_answer,
+        "grok": _grok_answer,
         "openrouter": _openrouter_answer,
-        "openai": _openai_answer,
     }
-    configured = [name for name in os.getenv("ASKI_PROVIDER_ORDER", "gemini,groq,openrouter,openai").split(",") if name.strip()]
-    providers = [(name.strip(), provider_map[name.strip()]) for name in configured if name.strip() in provider_map and os.getenv({"gemini": "GEMINI_API_KEY", "groq": "GROQ_API_KEY", "openrouter": "OPENROUTER_API_KEY", "openai": "OPENAI_API_KEY"}[name.strip()]) and _is_available(name.strip())]
+    key_map = {
+        "gemini": "GEMINI_API_KEY",
+        "grok": ("XAI_API_KEY", "GROK_API_KEY"),
+        "openrouter": "OPENROUTER_API_KEY",
+    }
+    configured_order = os.getenv("ASKI_PROVIDER_ORDER", "gemini,grok,openrouter")
+    configured = [name.strip().lower() for name in configured_order.split(",") if name.strip()]
+
+    providers = []
+    for name in configured:
+        if name not in provider_map or not _is_available(name):
+            continue
+        keys = key_map[name]
+        if isinstance(keys, tuple):
+            has_key = any(os.getenv(key) for key in keys)
+        else:
+            has_key = bool(os.getenv(keys))
+        if has_key:
+            providers.append((name, provider_map[name]))
 
     errors = []
     for name, provider in providers:
