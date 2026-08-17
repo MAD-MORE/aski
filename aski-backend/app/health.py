@@ -33,7 +33,16 @@ def system_health():
         "knowledge_items": len(knowledge),
         "rag": rag,
         "ai": {
-            "openrouter_configured": bool(os.getenv("OPENROUTER_API_KEY")),
+            "providers": {
+                "gemini": bool(os.getenv("GEMINI_API_KEY")),
+                "grok": bool(os.getenv("XAI_API_KEY") or os.getenv("GROK_API_KEY")),
+                "openrouter": bool(os.getenv("OPENROUTER_API_KEY")),
+            },
+            "provider_order": [
+                name.strip().lower()
+                for name in os.getenv("ASKI_PROVIDER_ORDER", "gemini,grok,openrouter").split(",")
+                if name.strip()
+            ],
             "embedding_model": os.getenv(
                 "OPENROUTER_EMBEDDING_MODEL",
                 "nvidia/llama-nemotron-embed-vl-1b-v2:free",
