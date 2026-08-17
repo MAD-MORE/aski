@@ -1,0 +1,56 @@
+/* Final ASKI visual overrides: plain document-like white canvas. */
+html, body, #root,
+.aski-shell, .aski-main, .aski-content, .message-column, .ai-message, .composer-wrap {
+  background: #fff !important;
+}
+
+/* Never render source collections inside the conversation flow. */
+.message-row > .source-stack,
+.ai-message > .source-stack,
+.message-row .source-heading {
+  display: none !important;
+}
+
+/* Sources are presented only through the explicit modal/drawer action. */
+.message-actions { margin-top: 10px; }
+.sources-toggle {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sources-toggle:hover { color: #185adb; }
+
+.sources-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(16,24,40,.18);
+}
+.sources-dialog {
+  width: min(520px, 100%);
+  max-height: min(700px, 90vh);
+  overflow: auto;
+  border: 1px solid #e4e7ec;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(16,24,40,.18);
+}
+.source-list { display: grid; gap: 8px; padding: 14px; }
+
+@media (max-width: 600px) {
+  .sources-overlay { align-items: flex-end; padding: 0; }
+  .sources-dialog {
+    width: 100%;
+    max-height: 78vh;
+    border-radius: 18px 18px 0 0;
+    border-bottom: 0;
+  }
+}
