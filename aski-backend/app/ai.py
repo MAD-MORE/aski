@@ -1,6 +1,12 @@
 import os
 import re
+import time
 import requests
+
+# Short-lived circuit breakers prevent an exhausted provider (especially a free
+# tier returning 429) from being hammered on every request. This is intentionally
+# process-local; each server instance protects itself without storing secrets.
+_PROVIDER_COOLDOWN_UNTIL = {}
 
 
 def _build_prompt(question, context, history=None, profile=None):
@@ -48,17 +54,41 @@ def _source_fallback(question, context):
     return "The AI model is temporarily unavailable, so I'm giving you the verified information available in the UCC knowledge base:\n\n" + "\n\n".join(snippets)
 
 
+def _cooldown(provider, response):
+    # Respect provider retry hints when available; otherwise use a safe default.
+    retry_after = response.headers.get("Retry-After")
+    try:
+        seconds = max(30, min(int(float(retry_after)), 3600)) if retry_after else 300
+    except (TypeError, ValueError):
+        seconds = 300
+    _PROVIDER_COOLDOWN_UNTIL[provider] = time.time() + seconds
+
+
+def _is_available(provider):
+    return time.time() >= _PROVIDER_COOLDOWN_UNTIL.get(provider, 0)
+
+
+def _provider_error(provider, response):
+    error = RuntimeError(f"{provider} returned HTTP {response.status_code}: {response.text[:500]}")
+    error.status_code = response.status_code
+    if response.status_code == 429:
+        _cooldown(provider, response)
+    return error
+
+
 def _gemini_answer(prompt):
     key = os.getenv("GEMINI_API_KEY")
     if not key:
         return None
     model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-    response = requests.post(url, params={"key": key}, json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.2}}, timeout=60)
+    response = requests.post(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+        params={"key": key},
+        json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.2}},
+        timeout=45,
+    )
     if not response.ok:
-        error = RuntimeError(f"Gemini returned HTTP {response.status_code}: {response.text[:500]}")
-        error.status_code = response.status_code
-        raise error
+        raise _provider_error("Gemini", response)
     data = response.json()
     text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text")
     if not text:
@@ -71,11 +101,14 @@ def _groq_answer(prompt):
     if not key:
         return None
     model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
-    response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"}, json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2}, timeout=60)
+    response = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2},
+        timeout=45,
+    )
     if not response.ok:
-        error = RuntimeError(f"Groq returned HTTP {response.status_code}: {response.text[:500]}")
-        error.status_code = response.status_code
-        raise error
+        raise _provider_error("Groq", response)
     data = response.json()
     text = data.get("choices", [{}])[0].get("message", {}).get("content")
     if not text:
@@ -88,11 +121,14 @@ def _openrouter_answer(prompt):
     if not key:
         return None
     model = os.getenv("OPENROUTER_MODEL", "openrouter/free")
-    response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json", "HTTP-Referer": os.getenv("ASKI_SITE_URL", "https://aski-theta.vercel.app"), "X-Title": "ASKI"}, json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2}, timeout=60)
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json", "HTTP-Referer": os.getenv("ASKI_SITE_URL", "https://aski-theta.vercel.app"), "X-Title": "ASKI"},
+        json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2},
+        timeout=45,
+    )
     if not response.ok:
-        error = RuntimeError(f"OpenRouter returned HTTP {response.status_code}: {response.text[:500]}")
-        error.status_code = response.status_code
-        raise error
+        raise _provider_error("OpenRouter", response)
     data = response.json()
     text = data.get("choices", [{}])[0].get("message", {}).get("content")
     if not text:
@@ -100,41 +136,39 @@ def _openrouter_answer(prompt):
     return {"answer": _clean_answer(text), "provider": "openrouter", "model": data.get("model") or model}
 
 
-def generate_answer(question, context, history=None, profile=None):
-    prompt = _build_prompt(question, context, history, profile)
-
-    # Ordered provider failover. Each provider gets one attempt; transient or
-    # quota failures move to the next provider. This prevents one exhausted
-    # free tier from taking ASKI offline.
-    providers = []
-    if os.getenv("GEMINI_API_KEY"):
-        providers.append(_gemini_answer)
-    if os.getenv("GROQ_API_KEY"):
-        providers.append(_groq_answer)
-    if os.getenv("OPENROUTER_API_KEY"):
-        providers.append(_openrouter_answer)
-    if os.getenv("OPENAI_API_KEY"):
-        providers.append(_openai_answer)
-
-    errors = []
-    for provider in providers:
-        try:
-            result = provider(prompt)
-            if result:
-                return result
-        except Exception as exc:
-            errors.append(str(exc))
-
-    return {
-        "answer": _source_fallback(question, context),
-        "provider": "ucc-knowledge-fallback",
-        "model": None,
-        "provider_warning": "All configured AI providers are temporarily unavailable" if errors else "No AI provider is configured",
-    }
-
-
 def _openai_answer(prompt):
     from openai import OpenAI
     model = os.getenv("OPENAI_MODEL", "gpt-5.6-luna")
     response = OpenAI(api_key=os.getenv("OPENAI_API_KEY")).responses.create(model=model, input=prompt)
     return {"answer": _clean_answer(response.output_text), "provider": "openai", "model": model}
+
+
+def generate_answer(question, context, history=None, profile=None):
+    prompt = _build_prompt(question, context, history, profile)
+
+    # Free-first, resilient failover. Exhausted providers are temporarily
+    # skipped instead of receiving another request on every user message.
+    provider_map = {
+        "gemini": _gemini_answer,
+        "groq": _groq_answer,
+        "openrouter": _openrouter_answer,
+        "openai": _openai_answer,
+    }
+    configured = [name for name in os.getenv("ASKI_PROVIDER_ORDER", "gemini,groq,openrouter,openai").split(",") if name.strip()]
+    providers = [(name.strip(), provider_map[name.strip()]) for name in configured if name.strip() in provider_map and os.getenv({"gemini": "GEMINI_API_KEY", "groq": "GROQ_API_KEY", "openrouter": "OPENROUTER_API_KEY", "openai": "OPENAI_API_KEY"}[name.strip()]) and _is_available(name.strip())]
+
+    errors = []
+    for name, provider in providers:
+        try:
+            result = provider(prompt)
+            if result:
+                return result
+        except Exception as exc:
+            errors.append(f"{name}: {exc}")
+
+    return {
+        "answer": _source_fallback(question, context),
+        "provider": "ucc-knowledge-fallback",
+        "model": None,
+        "provider_warning": "AI providers are temporarily unavailable; verified UCC knowledge was used" if errors else "No AI provider is configured",
+    }
